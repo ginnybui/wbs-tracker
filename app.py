@@ -1,33 +1,68 @@
 import streamlit as st
 import pandas as pd
 
+# Page Configuration
 st.set_page_config(page_title="WBS Tracker", layout="wide")
+
+# Hide Streamlit UI elements for a professional look
+st.markdown("""
+<style>
+    header {visibility: hidden;}
+    [data-testid="stHeader"] {display: none;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📊 PROJECT 01: WBS & Timeline Tracker")
 
-# 1. Đọc dữ liệu từ CSV (Yêu cầu bắt buộc)
-df = pd.read_csv('tasks.csv')
+# 1. Data Processing
+def load_data():
+    return pd.read_csv('tasks.csv')
 
-# 2. Dashboard tóm tắt (Baseline requirement)
+def save_data(dataframe):
+    dataframe.to_csv('tasks.csv', index=False)
+
+df = load_data()
+
+# 2. Project Summary Dashboard
 st.subheader("Project Summary")
-total = len(df)
-done = len(df[df['Status'] == 'Done'])
-st.progress(done/total)
-st.write(f"Hoàn thành {done}/{total} nhiệm vụ")
+total_tasks = len(df)
+completed_tasks = len(df[df['Status'] == 'Done'])
+progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
 
-# 3. Hiển thị bảng WBS
+st.progress(progress_ratio)
+st.write(f"Completed {completed_tasks} out of {total_tasks} tasks ({progress_ratio:.0%})")
+
+# 3. UI Styling Logic (Text Color Only)
+def apply_status_color(status):
+    if status == 'Done':
+        return 'color: #28a745; font-weight: bold;'
+    elif status == 'In Progress':
+        return 'color: #fd7e14; font-weight: bold;'
+    elif status == 'To Do':
+        return 'color: #6c757d;'
+    elif status == 'On Hold':
+        return 'color: #dc3545; font-weight: bold;'
+    return ''
+
+# 4. Task Display
 st.subheader("WBS Task List")
-st.dataframe(df, use_container_width=True)
+styled_df = df.style.applymap(apply_status_color, subset=['Status'])
+st.dataframe(styled_df, use_container_width=True)
 
-# 4. Form cập nhật trạng thái (Inline updates)
-st.subheader("Update Progress")
+# 5. Management Form
+st.subheader("Update Task Status")
 with st.form("update_form"):
-    task_id = st.selectbox("Chọn Task ID", df['Task ID'])
-    new_status = st.selectbox("Trạng thái", ["To Do", "In Progress", "Done", "On Hold"])
-    new_pct = st.slider("Tiến độ (%)", 0, 100, step=5)
+    selected_task_id = st.selectbox("Select Task ID", df['Task ID'])
+    updated_status = st.selectbox("Status", ["To Do", "In Progress", "Done", "On Hold"])
+    updated_progress = st.slider("Completion (%)", 0, 100, step=5)
     
-    if st.form_submit_button("Lưu thay đổi"):
-        df.loc[df['Task ID'] == task_id, 'Status'] = new_status
-        df.loc[df['Task ID'] == task_id, 'Completion %'] = new_pct
-        df.to_csv('tasks.csv', index=False) # Lưu lại CSV
-        st.success("Đã lưu!")
+    submit_changes = st.form_submit_button("Save Changes")
+    
+    if submit_changes:
+        df.loc[df['Task ID'] == selected_task_id, 'Status'] = updated_status
+        df.loc[df['Task ID'] == selected_task_id, 'Completion %'] = updated_progress
+        save_data(df)
+        st.success("Changes saved successfully!")
         st.rerun()
