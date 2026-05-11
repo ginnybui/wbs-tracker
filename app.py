@@ -4,13 +4,27 @@ import pandas as pd
 # Page Configuration
 st.set_page_config(page_title="WBS Tracker", layout="wide")
 
-# Hide Streamlit UI elements for a professional look
+# CUSTOM CSS: Background color and UI cleanup
 st.markdown("""
 <style>
+    /* Change background color of the entire app */
+    .stApp {
+        background-color: #f0f2f6; 
+    }
+    
+    /* Clean up headers and menus */
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    
+    /* Optional: Make the cards/widgets stand out */
+    div[data-testid="stForm"] {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -34,24 +48,28 @@ progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
 st.progress(progress_ratio)
 st.write(f"Completed {completed_tasks} out of {total_tasks} tasks ({progress_ratio:.0%})")
 
-# 3. UI Styling Logic (Text Color Only)
-def apply_status_color(status):
-    if status == 'Done':
-        return 'color: #28a745; font-weight: bold;'
-    elif status == 'In Progress':
-        return 'color: #fd7e14; font-weight: bold;'
-    elif status == 'To Do':
-        return 'color: #6c757d;'
-    elif status == 'On Hold':
-        return 'color: #dc3545; font-weight: bold;'
-    return ''
-
-# 4. Task Display
+# 3. Task Display using Column Config
 st.subheader("WBS Task List")
-styled_df = df.style.applymap(apply_status_color, subset=['Status'])
-st.dataframe(styled_df, use_container_width=True)
+st.dataframe(
+    df,
+    use_container_width=True,
+    column_config={
+        "Status": st.column_config.SelectboxColumn(
+            "Status",
+            options=["To Do", "In Progress", "Done", "On Hold"],
+            required=True,
+        ),
+        "Completion %": st.column_config.ProgressColumn(
+            "Completion %",
+            format="%d%%",
+            min_value=0,
+            max_value=100,
+        ),
+    },
+    hide_index=True,
+)
 
-# 5. Management Form
+# 4. Management Form
 st.subheader("Update Task Status")
 with st.form("update_form"):
     selected_task_id = st.selectbox("Select Task ID", df['Task ID'])
