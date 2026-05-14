@@ -17,6 +17,11 @@ st.markdown("""
     [data-testid="stHeader"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+
+    /* REMOVE TABLE ICONS (Toolbar at top-right) */
+    [data-testid="stElementToolbar"] {
+        display: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -24,13 +29,16 @@ st.title("📊 PROJECT 01: WBS & Timeline Tracker")
 
 # 1. Data Processing
 def load_data():
-    df = pd.read_csv('tasks.csv')
-    # Ensure hours columns exist for display
-    if "Est Hours" not in df.columns:
-        df["Est Hours"] = 0
-    if "Act Hours" not in df.columns:
-        df["Act Hours"] = 0
-    return df
+    try:
+        df = pd.read_csv('tasks.csv')
+        # Ensure hours columns exist for display
+        if "Est Hours" not in df.columns:
+            df["Est Hours"] = 0
+        if "Act Hours" not in df.columns:
+            df["Act Hours"] = 0
+        return df
+    except:
+        return pd.DataFrame(columns=["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
 
 df = load_data()
 
