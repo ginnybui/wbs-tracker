@@ -26,13 +26,18 @@ def load_data():
         df['Completion %'] = pd.to_numeric(df['Completion %']).fillna(0).astype(int)
         return df
     except:
-        # Added Health to default columns
-        return pd.DataFrame(columns=["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %", "Health"])
+        return pd.DataFrame(columns=["Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
 
 def save_data(dataframe):
-    # FIXED: Only drop UI-specific columns, KEEP 'Health'
-    temp_cols = ['Select', 'Action']
-    save_df = dataframe.drop(columns=[c for c in temp_cols if c in dataframe.columns])
+    # Define the exact order of columns for CSV to match the Dashboard UI
+    csv_columns = [
+        "Task ID", "Title", "Health", "Status", "Est Hours", 
+        "Act Hours", "Start Date", "End Date", "Completion %"
+    ]
+    
+    # Filter out temporary UI columns like 'Select' or 'Action'
+    # and reorder columns so 'Health' is right after 'Title'
+    save_df = dataframe[[col for col in csv_columns if col in dataframe.columns]]
     save_df.to_csv('tasks.csv', index=False)
 
 if 'page' not in st.session_state:
@@ -51,6 +56,7 @@ def confirm_delete_dialog(selected_ids):
         df_full = load_data()
         df_full = df_full[~df_full['Task ID'].astype(str).isin([str(x) for x in selected_ids])]
         save_data(df_full)
+        st.success("Deleted successfully!")
         st.rerun()
 
 df = load_data()
@@ -85,7 +91,7 @@ if st.session_state.page in ['add_task', 'update_task']:
         if b1.form_submit_button("Save", type="primary"):
             calc_comp = int(min((f_act / f_est) * 100, 100)) if f_est > 0 else 0
             
-            # Recalculate Health before saving
+            # Recalculate Health before saving to ensure it's in the CSV
             h_val = ""
             if f_act > f_est: h_val = "🔴 Over"
             elif f_act < f_est and f_act > 0: h_val = "🟢 Efficient"
@@ -119,6 +125,7 @@ if st.session_state.page in ['add_task', 'update_task']:
 else:
     st.title("📊 PROJECT 01: WBS & Tracker")
     
+    # Progress Summary
     total_tasks = len(df)
     completed_tasks = len(df[df['Status'] == 'Done'])
     progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
@@ -127,6 +134,7 @@ else:
     st.write(f"Overall Progress: {progress_ratio:.0%}")
     st.markdown("---")
 
+    # Dynamic Health Calculation for UI display
     def get_health(row):
         if row['Act Hours'] > row['Est Hours']: return "🔴 Over"
         if row['Act Hours'] < row['Est Hours'] and row['Act Hours'] > 0: return "🟢 Efficient"
@@ -136,6 +144,7 @@ else:
     df['Health'] = df.apply(get_health, axis=1)
     df['Select'] = False 
 
+    # Header with Dynamic Buttons
     col_h, col_edit, col_del, col_add = st.columns([3.5, 1.2, 1.2, 1.1])
     col_h.subheader("WBS Task List")
     
@@ -143,6 +152,7 @@ else:
         st.session_state.page = 'add_task'
         st.rerun()
 
+    # Data Editor
     display_cols = ["Select", "Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"]
     edited_df = st.data_editor(
         df[display_cols],
@@ -157,12 +167,14 @@ else:
 
     selected_rows = edited_df[edited_df['Select'] == True]
 
+    # Dynamic Update Button
     if len(selected_rows) == 1:
         if col_edit.button("✏️ Update Task", use_container_width=True):
             st.session_state.edit_task_id = selected_rows.iloc[0]['Task ID']
             st.session_state.page = 'update_task'
             st.rerun()
 
+    # Dynamic Bulk Delete Button
     if len(selected_rows) > 0:
         if col_del.button(f"🗑️ Delete ({len(selected_rows)})", use_container_width=True):
             confirm_delete_dialog(selected_rows['Task ID'].tolist())

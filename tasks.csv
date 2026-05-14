@@ -1,6 +1,6 @@
-Task ID,Title,Status,Est Hours,Act Hours,Start Date,End Date,Completion %,Health
-1,Setup Project,Done,4,2,2026-05-01,2026-05-02,50,🟢 Efficient
-2,Design UI Update,Done,20,21,2026-05-08,2026-05-15,100,
-3,New Task 1,Done,8,7,2026-05-14,2026-05-14,87,
-4,Title 001,To Do,1,1,2026-05-14,2026-05-14,100,
-5,Title 002,To Do,1,0,2026-05-14,2026-05-14,0,
+Task ID,Title,Health,Status,Est Hours,Act Hours,Start Date,End Date,Completion %
+1,Setup Project,🟢 Efficient,Done,4,2,2026-05-01,2026-05-02,50
+2,Design UI Update,,Done,20,21,2026-05-08,2026-05-15,100
+3,New Task 1,,Done,8,7,2026-05-14,2026-05-14,87
+4,Title 001,,To Do,1,1,2026-05-14,2026-05-14,100
+5,Title 002,,To Do,1,0,2026-05-14,2026-05-14,0
