@@ -29,7 +29,8 @@ def load_data():
         return pd.DataFrame(columns=["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
 
 def save_data(dataframe):
-    temp_cols = ['Health', 'Select', 'Action']
+    # CHỈ xóa cột Action (checkbox), GIỮ LẠI cột Health để lưu vào CSV
+    temp_cols = ['Action', 'Select'] 
     save_df = dataframe.drop(columns=[c for c in temp_cols if c in dataframe.columns])
     save_df.to_csv('tasks.csv', index=False)
 
