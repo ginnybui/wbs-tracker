@@ -44,7 +44,8 @@ if st.session_state.page == 'add_task':
     st.title("Add New Task")
     
     with st.form("new_task_form"):
-        f_title = st.text_input("Title")
+        # Added a '*' to the label to indicate required field
+        f_title = st.text_input("Title *")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -61,12 +62,12 @@ if st.session_state.page == 'add_task':
             cancel = st.form_submit_button("Cancel")
 
         if submit:
-            if f_title:
-                # Simple ID generation based on count
+            # Check if title is empty or just whitespace
+            if f_title.strip():
                 new_id = str(len(df) + 1)
                 new_row = pd.DataFrame([{
                     "Task ID": new_id, 
-                    "Title": f_title, 
+                    "Title": f_title.strip(), 
                     "Status": "To Do",
                     "Est Hours": f_est, 
                     "Act Hours": f_act,
@@ -79,7 +80,8 @@ if st.session_state.page == 'add_task':
                 st.session_state.page = 'dashboard'
                 st.rerun()
             else:
-                st.error("Please enter a Title.")
+                # Show error if title is missing
+                st.error("Title is a required field. Please enter a task title.")
         
         if cancel:
             st.session_state.page = 'dashboard'
@@ -89,7 +91,6 @@ if st.session_state.page == 'add_task':
 else:
     st.title("📊 PROJECT 01: WBS & Timeline Tracker")
 
-    # Project Summary
     st.subheader("Project Summary")
     total_tasks = len(df)
     completed_tasks = len(df[df['Status'] == 'Done'])
@@ -99,7 +100,6 @@ else:
 
     st.markdown("---")
 
-    # Table Header with Top-Right Button
     col_head, col_act = st.columns([5, 1])
     with col_head:
         st.subheader("WBS Task List")
@@ -108,7 +108,6 @@ else:
             st.session_state.page = 'add_task'
             st.rerun()
 
-    # Task Table
     st.dataframe(
         df,
         use_container_width=True,
