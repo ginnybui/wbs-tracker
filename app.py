@@ -64,15 +64,14 @@ if st.session_state.page in ['add_task', 'update_task']:
             f_est = st.number_input("Estimated Hours", min_value=1, value=max(1, d_est))
             f_start = st.date_input("Start Date", value=d_start)
         with col2:
-            # Removed st.info alert text as requested
             f_act = st.number_input("Actual Hours", min_value=0, value=d_act)
             f_end = st.date_input("End Date", value=d_end)
             
-        c1, c2 = st.columns([1, 8])
-        if c1.form_submit_button("Save"):
-            # Auto-calculate completion capped at 100%
+        # Updated button layout to include Delete
+        c1, c2, c3 = st.columns([1, 1, 7])
+        
+        if c1.form_submit_button("Save", type="primary"):
             calc_comp = int(min((f_act / f_est) * 100, 100)) if f_est > 0 else 0
-            
             if is_update:
                 idx = df[df['Task ID'].astype(str) == str(st.session_state.edit_task_id)].index[0]
                 df.at[idx, 'Title'], df.at[idx, 'Status'] = f_title, f_status
@@ -80,7 +79,7 @@ if st.session_state.page in ['add_task', 'update_task']:
                 df.at[idx, 'Start Date'], df.at[idx, 'End Date'] = f_start, f_end
                 df.at[idx, 'Completion %'] = calc_comp
             else:
-                new_id = str(len(df) + 1)
+                new_id = str(int(df['Task ID'].max()) + 1 if not df.empty else 1)
                 new_row = pd.DataFrame([{"Task ID": new_id, "Title": f_title, "Status": f_status, 
                                          "Est Hours": f_est, "Act Hours": f_act, "Start Date": f_start, 
                                          "End Date": f_end, "Completion %": calc_comp}])
@@ -88,7 +87,18 @@ if st.session_state.page in ['add_task', 'update_task']:
             save_data(df)
             st.session_state.page = 'dashboard'
             st.rerun()
-        if c2.form_submit_button("Cancel"):
+
+        # Logic for Delete Button
+        if c2.form_submit_button("🗑️ Delete"):
+            if is_update:
+                df = df[df['Task ID'].astype(str) != str(st.session_state.edit_task_id)]
+                save_data(df)
+                st.session_state.page = 'dashboard'
+                st.rerun()
+            else:
+                st.error("Cannot delete a record that hasn't been saved yet.")
+
+        if c3.form_submit_button("Cancel"):
             st.session_state.page = 'dashboard'
             st.rerun()
 
@@ -105,7 +115,7 @@ else:
     st.write(f"Overall Progress: {progress_ratio:.0%}")
     st.markdown("---")
 
-    # HEALTH LOGIC for the Alert column
+    # HEALTH LOGIC
     def get_health(row):
         if row['Act Hours'] > row['Est Hours']:
             return "🔴 Over"
@@ -125,7 +135,7 @@ else:
         st.session_state.page = 'add_task'
         st.rerun()
 
-    # Reorder columns for display
+    # Display columns
     display_cols = ["Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %", "Action"]
     
     edited_df = st.data_editor(
@@ -133,14 +143,13 @@ else:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Health": st.column_config.TextColumn("Health", help="🔴 > Est, 🟢 < Est, ⚪ On Time"),
+            "Health": st.column_config.TextColumn("Health"),
             "Action": st.column_config.CheckboxColumn("Edit", default=False),
             "Completion %": st.column_config.ProgressColumn("Progress", format="%d%%", min_value=0, max_value=100),
         },
         disabled=[col for col in display_cols if col != "Action"]
     )
 
-    # Click handling for Edit button
     if edited_df['Action'].any():
         selected_id = edited_df[edited_df['Action'] == True].iloc[0]['Task ID']
         st.session_state.edit_task_id = selected_id
