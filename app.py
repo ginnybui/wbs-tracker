@@ -1,79 +1,122 @@
 import streamlit as st
 import pandas as pd
+from datetime import date
 
 # Page Configuration
 st.set_page_config(page_title="WBS Tracker", layout="wide")
 
-# CUSTOM CSS: Background color and UI cleanup
+# CUSTOM CSS
 st.markdown("""
 <style>
-    /* Change background color of the entire app */
-    .stApp {
-        background-color: #f0f2f6; 
-    }
-    
-    /* Clean up headers and menus */
+    .stApp { background-color: #f0f2f6; }
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-
-    /* REMOVE TABLE ICONS (Toolbar at top-right) */
-    [data-testid="stElementToolbar"] {
-        display: none;
-    }
+    [data-testid="stElementToolbar"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
-
-st.title("📊 PROJECT 01: WBS & Timeline Tracker")
 
 # 1. Data Processing
 def load_data():
     try:
         df = pd.read_csv('tasks.csv')
-        # Ensure hours columns exist for display
-        if "Est Hours" not in df.columns:
-            df["Est Hours"] = 0
-        if "Act Hours" not in df.columns:
-            df["Act Hours"] = 0
+        for col in ["Est Hours", "Act Hours"]:
+            if col not in df.columns:
+                df[col] = 0
         return df
     except:
         return pd.DataFrame(columns=["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
 
-df = load_data()
+def save_data(dataframe):
+    dataframe.to_csv('tasks.csv', index=False)
 
-# Enforce column order: Status followed by Est Hours and Act Hours
+# Initialize Session State for navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'dashboard'
+
+df = load_data()
 cols = ["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"]
 df = df.reindex(columns=cols)
 
-# 2. Project Summary Dashboard
-st.subheader("Project Summary")
-total_tasks = len(df)
-completed_tasks = len(df[df['Status'] == 'Done'])
-progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
+# --- VIEW 1: ADD NEW TASK PAGE ---
+if st.session_state.page == 'add_task':
+    st.title("Add New Task")
+    
+    with st.form("new_task_form"):
+        f_title = st.text_input("Title")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            f_est = st.number_input("Est Hours", min_value=0)
+            f_start = st.date_input("Start Date", value=date.today())
+        with col2:
+            f_act = st.number_input("Act Hours", min_value=0)
+            f_end = st.date_input("End Date", value=date.today())
+            
+        col_btn1, col_btn2 = st.columns([1, 5])
+        with col_btn1:
+            submit = st.form_submit_button("Save Task")
+        with col_btn2:
+            cancel = st.form_submit_button("Cancel")
 
-st.progress(progress_ratio)
-st.write(f"Completed {completed_tasks} out of {total_tasks} tasks ({progress_ratio:.0%})")
+        if submit:
+            if f_title:
+                # Simple ID generation based on count
+                new_id = str(len(df) + 1)
+                new_row = pd.DataFrame([{
+                    "Task ID": new_id, 
+                    "Title": f_title, 
+                    "Status": "To Do",
+                    "Est Hours": f_est, 
+                    "Act Hours": f_act,
+                    "Start Date": f_start, 
+                    "End Date": f_end, 
+                    "Completion %": 0
+                }])
+                df = pd.concat([df, new_row], ignore_index=True)
+                save_data(df)
+                st.session_state.page = 'dashboard'
+                st.rerun()
+            else:
+                st.error("Please enter a Title.")
+        
+        if cancel:
+            st.session_state.page = 'dashboard'
+            st.rerun()
 
-# 3. Task Display using Column Config
-st.subheader("WBS Task List")
-st.dataframe(
-    df,
-    use_container_width=True,
-    column_config={
-        "Status": st.column_config.SelectboxColumn(
-            "Status",
-            options=["To Do", "In Progress", "Done", "On Hold"],
-            required=True,
-        ),
-        "Est Hours": st.column_config.NumberColumn("Est Hours", format="%d"),
-        "Act Hours": st.column_config.NumberColumn("Act Hours", format="%d"),
-        "Completion %": st.column_config.ProgressColumn(
-            "Completion %",
-            format="%d%%",
-            min_value=0,
-            max_value=100,
-        ),
-    },
-    hide_index=True,
-)
+# --- VIEW 2: DASHBOARD PAGE ---
+else:
+    st.title("📊 PROJECT 01: WBS & Timeline Tracker")
+
+    # Project Summary
+    st.subheader("Project Summary")
+    total_tasks = len(df)
+    completed_tasks = len(df[df['Status'] == 'Done'])
+    progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
+    st.progress(progress_ratio)
+    st.write(f"Completed {completed_tasks} out of {total_tasks} tasks ({progress_ratio:.0%})")
+
+    st.markdown("---")
+
+    # Table Header with Top-Right Button
+    col_head, col_act = st.columns([5, 1])
+    with col_head:
+        st.subheader("WBS Task List")
+    with col_act:
+        if st.button("➕ Add New", use_container_width=True):
+            st.session_state.page = 'add_task'
+            st.rerun()
+
+    # Task Table
+    st.dataframe(
+        df,
+        use_container_width=True,
+        column_config={
+            "Status": st.column_config.SelectboxColumn("Status", options=["To Do", "In Progress", "Done", "On Hold"]),
+            "Est Hours": st.column_config.NumberColumn("Est Hours", format="%d"),
+            "Act Hours": st.column_config.NumberColumn("Act Hours", format="%d"),
+            "Completion %": st.column_config.ProgressColumn("Completion %", format="%d%%", min_value=0, max_value=100),
+        },
+        hide_index=True,
+    )
