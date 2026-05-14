@@ -7,18 +7,11 @@ st.set_page_config(page_title="WBS Tracker", layout="wide")
 # CUSTOM CSS: Background color and UI cleanup
 st.markdown("""
 <style>
-    /* Change background color of the entire app */
-    .stApp {
-        background-color: #f0f2f6; 
-    }
-    
-    /* Clean up headers and menus */
+    .stApp { background-color: #f0f2f6; }
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
-    /* Optional: Make the cards/widgets stand out */
     div[data-testid="stForm"] {
         background-color: #ffffff;
         border-radius: 10px;
@@ -32,12 +25,23 @@ st.title("📊 PROJECT 01: WBS & Timeline Tracker")
 
 # 1. Data Processing
 def load_data():
-    return pd.read_csv('tasks.csv')
+    df = pd.read_csv('tasks.csv')
+    # Add columns if they don't exist yet
+    if "Est Hours" not in df.columns:
+        df["Est Hours"] = 0
+    if "Act Hours" not in df.columns:
+        df["Act Hours"] = 0
+    return df
 
 def save_data(dataframe):
     dataframe.to_csv('tasks.csv', index=False)
 
 df = load_data()
+
+# Reorder columns to place Hours after Status
+# Current order: Task ID, Title, Status, Est Hours, Act Hours, Start Date, End Date, Completion %
+cols = ["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"]
+df = df.reindex(columns=cols)
 
 # 2. Project Summary Dashboard
 st.subheader("Project Summary")
@@ -59,6 +63,8 @@ st.dataframe(
             options=["To Do", "In Progress", "Done", "On Hold"],
             required=True,
         ),
+        "Est Hours": st.column_config.NumberColumn("Est Hours", format="%d"),
+        "Act Hours": st.column_config.NumberColumn("Act Hours", format="%d"),
         "Completion %": st.column_config.ProgressColumn(
             "Completion %",
             format="%d%%",
@@ -73,14 +79,22 @@ st.dataframe(
 st.subheader("Update Task Status")
 with st.form("update_form"):
     selected_task_id = st.selectbox("Select Task ID", df['Task ID'])
-    updated_status = st.selectbox("Status", ["To Do", "In Progress", "Done", "On Hold"])
-    updated_progress = st.slider("Completion (%)", 0, 100, step=5)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        updated_status = st.selectbox("Status", ["To Do", "In Progress", "Done", "On Hold"])
+        updated_est = st.number_input("Estimated Hours", min_value=0)
+    with col2:
+        updated_progress = st.slider("Completion (%)", 0, 100, step=5)
+        updated_act = st.number_input("Actual Hours", min_value=0)
     
     submit_changes = st.form_submit_button("Save Changes")
     
     if submit_changes:
         df.loc[df['Task ID'] == selected_task_id, 'Status'] = updated_status
         df.loc[df['Task ID'] == selected_task_id, 'Completion %'] = updated_progress
+        df.loc[df['Task ID'] == selected_task_id, 'Est Hours'] = updated_est
+        df.loc[df['Task ID'] == selected_task_id, 'Act Hours'] = updated_act
         save_data(df)
         st.success("Changes saved successfully!")
         st.rerun()
