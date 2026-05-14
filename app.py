@@ -29,12 +29,10 @@ def load_data():
         return pd.DataFrame(columns=["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
 
 def save_data(dataframe):
-    # Remove the temporary 'Display Title' before saving
-    if 'Display Title' in dataframe.columns:
-        dataframe = dataframe.drop(columns=['Display Title'])
-    if 'Action' in dataframe.columns:
-        dataframe = dataframe.drop(columns=['Action'])
-    dataframe.to_csv('tasks.csv', index=False)
+    # Cleanup temporary columns before saving to CSV
+    temp_cols = ['Health', 'Action']
+    save_df = dataframe.drop(columns=[c for c in temp_cols if c in dataframe.columns])
+    save_df.to_csv('tasks.csv', index=False)
 
 if 'page' not in st.session_state:
     st.session_state.page = 'dashboard'
@@ -66,14 +64,14 @@ if st.session_state.page in ['add_task', 'update_task']:
             f_est = st.number_input("Estimated Hours", min_value=1, value=max(1, d_est))
             f_start = st.date_input("Start Date", value=d_start)
         with col2:
-            st.info("💡 Progress is auto-calculated. Alerts will show if Actual > Estimated.")
+            # Removed st.info alert text as requested
             f_act = st.number_input("Actual Hours", min_value=0, value=d_act)
             f_end = st.date_input("End Date", value=d_end)
             
         c1, c2 = st.columns([1, 8])
         if c1.form_submit_button("Save"):
-            # Progress capped at 100%
-            calc_comp = int(min((f_act / f_est) * 100, 100))
+            # Auto-calculate completion capped at 100%
+            calc_comp = int(min((f_act / f_est) * 100, 100)) if f_est > 0 else 0
             
             if is_update:
                 idx = df[df['Task ID'].astype(str) == str(st.session_state.edit_task_id)].index[0]
@@ -98,7 +96,7 @@ if st.session_state.page in ['add_task', 'update_task']:
 else:
     st.title("📊 PROJECT 01: WBS & Tracker")
     
-    # Summary calculation
+    # Summary calculations
     total_tasks = len(df)
     completed_tasks = len(df[df['Status'] == 'Done'])
     progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
@@ -107,15 +105,17 @@ else:
     st.write(f"Overall Progress: {progress_ratio:.0%}")
     st.markdown("---")
 
-    # ADD ALERT LOGIC TO TITLE FOR DISPLAY
-    def add_alert(row):
+    # HEALTH LOGIC for the Alert column
+    def get_health(row):
         if row['Act Hours'] > row['Est Hours']:
-            return f"🔴 {row['Title']}"
-        elif row['Act Hours'] < row['Est Hours'] and row['Status'] == 'Done':
-            return f"🟢 {row['Title']}"
-        return row['Title']
+            return "🔴 Over"
+        elif row['Act Hours'] < row['Est Hours'] and row['Act Hours'] > 0:
+            return "🟢 Efficient"
+        elif row['Status'] == 'Done' and row['Act Hours'] == row['Est Hours']:
+            return "⚪ On Track"
+        return ""
 
-    df['Display Title'] = df.apply(add_alert, axis=1)
+    df['Health'] = df.apply(get_health, axis=1)
     df['Action'] = False
 
     # Header
@@ -125,21 +125,22 @@ else:
         st.session_state.page = 'add_task'
         st.rerun()
 
-    # Reorder columns to show Alert Title
-    display_cols = ["Task ID", "Display Title", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %", "Action"]
+    # Reorder columns for display
+    display_cols = ["Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %", "Action"]
     
     edited_df = st.data_editor(
         df[display_cols],
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Display Title": st.column_config.TextColumn("Title (Alerts: 🔴 Over / 🟢 Under)"),
+            "Health": st.column_config.TextColumn("Health", help="🔴 > Est, 🟢 < Est, ⚪ On Time"),
             "Action": st.column_config.CheckboxColumn("Edit", default=False),
             "Completion %": st.column_config.ProgressColumn("Progress", format="%d%%", min_value=0, max_value=100),
         },
         disabled=[col for col in display_cols if col != "Action"]
     )
 
+    # Click handling for Edit button
     if edited_df['Action'].any():
         selected_id = edited_df[edited_df['Action'] == True].iloc[0]['Task ID']
         st.session_state.edit_task_id = selected_id

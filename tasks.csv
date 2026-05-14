@@ -1,3 +1,5 @@
 Task ID,Title,Status,Est Hours,Act Hours,Start Date,End Date,Completion %
-1,Setup Project,To Do,0,0,2026-05-01,2026-05-02,45
-2,Design UI,On Hold,0,0,2026-05-08,2026-05-15,20
+1,Setup Project,Done,1,1,2026-05-01,2026-05-02,100
+2,Design UI Update,On Hold,20,21,2026-05-08,2026-05-15,100
+3,New Task 1,Done,8,7,2026-05-14,2026-05-14,87
+4,Task 2,To Do,0,0,2026-05-14,2026-05-14,0
