@@ -2,179 +2,94 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Page Configuration
-st.set_page_config(page_title="WBS Tracker", layout="wide")
+# --- CONFIGURATION ---
+# Using direct CSV link to bypass HTTP 400 errors from streamlit-gsheets
+SHEET_ID = "1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4"
+SHEET_NAME = "Data_DEV"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={SHEET_NAME}"
 
-# CUSTOM CSS
-st.markdown("""
-<style>
-    .stApp { background-color: #f0f2f6; }
-    header {visibility: hidden;}
-    [data-testid="stHeader"] {display: none;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    [data-testid="stElementToolbar"] { display: none; }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
 
-# 1. DATA PROCESSING
+# --- DATA LOADING ---
 def load_data():
     try:
-        df = pd.read_csv('tasks.csv')
-        df['Start Date'] = pd.to_datetime(df['Start Date']).dt.date
-        df['End Date'] = pd.to_datetime(df['End Date']).dt.date
-        df['Completion %'] = pd.to_numeric(df['Completion %']).fillna(0).astype(int)
+        # Direct read from Google Sheets public CSV export
+        df = pd.read_csv(CSV_URL)
+        # Clean column names
+        df.columns = df.columns.str.strip()
+        
+        # Ensure essential columns exist
+        required_cols = ["Task ID", "Title", "Status", "Est Hours", "Act Hours", "Completion %"]
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = 0 if "Hours" in col else "N/A"
+        
         return df
-    except:
-        return pd.DataFrame(columns=["Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"])
+    except Exception as e:
+        st.error(f"Data Connection Error: {e}")
+        return pd.DataFrame()
 
-def save_data(dataframe):
-    # Define the exact order of columns for CSV to match the Dashboard UI
-    csv_columns = [
-        "Task ID", "Title", "Health", "Status", "Est Hours", 
-        "Act Hours", "Start Date", "End Date", "Completion %"
-    ]
-    
-    # Filter out temporary UI columns like 'Select' or 'Action'
-    # and reorder columns so 'Health' is right after 'Title'
-    save_df = dataframe[[col for col in csv_columns if col in dataframe.columns]]
-    save_df.to_csv('tasks.csv', index=False)
+# --- UI HEADER ---
+st.title("📊 Project WBS Dashboard")
+st.markdown("---")
 
-if 'page' not in st.session_state:
-    st.session_state.page = 'dashboard'
-if 'edit_task_id' not in st.session_state:
-    st.session_state.edit_task_id = None
-
-# --- DIALOG FOR DELETE CONFIRMATION ---
-@st.dialog("Confirm Deletion")
-def confirm_delete_dialog(selected_ids):
-    st.warning(f"Are you sure you want to delete {len(selected_ids)} record(s)?")
-    col_d1, col_d2 = st.columns(2)
-    if col_d1.button("Cancel", use_container_width=True):
-        st.rerun()
-    if col_d2.button("Yes, Delete", type="primary", use_container_width=True):
-        df_full = load_data()
-        df_full = df_full[~df_full['Task ID'].astype(str).isin([str(x) for x in selected_ids])]
-        save_data(df_full)
-        st.success("Deleted successfully!")
-        st.rerun()
-
+# --- MAIN APP ---
 df = load_data()
 
-# --- VIEW: ADD / UPDATE TASK PAGE ---
-if st.session_state.page in ['add_task', 'update_task']:
-    is_update = st.session_state.page == 'update_task'
-    st.title("Update Task" if is_update else "Add New Task")
-    
-    if is_update:
-        task_to_edit = df[df['Task ID'].astype(str) == str(st.session_state.edit_task_id)].iloc[0]
-        d_title, d_status = task_to_edit['Title'], task_to_edit['Status']
-        d_est, d_act = int(task_to_edit['Est Hours']), int(task_to_edit['Act Hours'])
-        d_start, d_end = task_to_edit['Start Date'], task_to_edit['End Date']
-    else:
-        d_title, d_status, d_est, d_act = "", "To Do", 1, 0
-        d_start, d_end = datetime.now().date(), datetime.now().date()
-
-    with st.form("task_form"):
-        f_title = st.text_input("Title", value=d_title)
-        c1, c2 = st.columns(2)
-        with c1:
-            f_status = st.selectbox("Status", ["To Do", "In Progress", "Done", "On Hold"], 
-                                    index=["To Do", "In Progress", "Done", "On Hold"].index(d_status))
-            f_est = st.number_input("Estimated Hours", min_value=1, value=max(1, d_est))
-            f_start = st.date_input("Start Date", value=d_start)
-        with c2:
-            f_act = st.number_input("Actual Hours", min_value=0, value=d_act)
-            f_end = st.date_input("End Date", value=d_end)
-            
-        b1, b2, b3 = st.columns([1, 1, 7])
-        if b1.form_submit_button("Save", type="primary"):
-            calc_comp = int(min((f_act / f_est) * 100, 100)) if f_est > 0 else 0
-            
-            # Recalculate Health before saving to ensure it's in the CSV
-            h_val = ""
-            if f_act > f_est: h_val = "🔴 Over"
-            elif f_act < f_est and f_act > 0: h_val = "🟢 Efficient"
-            elif f_status == 'Done': h_val = "⚪ On Track"
-
-            if is_update:
-                idx = df[df['Task ID'].astype(str) == str(st.session_state.edit_task_id)].index[0]
-                df.loc[idx, ['Title', 'Status', 'Est Hours', 'Act Hours', 'Start Date', 'End Date', 'Completion %', 'Health']] = \
-                    [f_title, f_status, f_est, f_act, f_start, f_end, calc_comp, h_val]
-            else:
-                new_id = str(int(df['Task ID'].max()) + 1 if not df.empty else 1)
-                new_row = pd.DataFrame([{"Task ID": new_id, "Title": f_title, "Status": f_status, 
-                                         "Est Hours": f_est, "Act Hours": f_act, "Start Date": f_start, 
-                                         "End Date": f_end, "Completion %": calc_comp, "Health": h_val}])
-                df = pd.concat([df, new_row], ignore_index=True)
-            save_data(df)
-            st.session_state.page = 'dashboard'
-            st.rerun()
-
-        if b2.form_submit_button("🗑️ Delete"):
-            if is_update:
-                confirm_delete_dialog([st.session_state.edit_task_id])
-            else:
-                st.error("Action not available for unsaved task.")
-
-        if b3.form_submit_button("Cancel"):
-            st.session_state.page = 'dashboard'
-            st.rerun()
-
-# --- VIEW: DASHBOARD PAGE ---
-else:
-    st.title("📊 PROJECT 01: WBS & Tracker")
-    
-    # Progress Summary
+if not df.empty:
+    # 1. METRICS SECTION
+    col1, col2, col3, col4 = st.columns(4)
     total_tasks = len(df)
     completed_tasks = len(df[df['Status'] == 'Done'])
-    progress_ratio = completed_tasks / total_tasks if total_tasks > 0 else 0
-    st.subheader("Project Summary")
-    st.progress(progress_ratio)
-    st.write(f"Overall Progress: {progress_ratio:.0%}")
-    st.markdown("---")
+    total_est = df['Est Hours'].sum()
+    total_act = df['Act Hours'].sum()
 
-    # Dynamic Health Calculation for UI display
-    def get_health(row):
-        if row['Act Hours'] > row['Est Hours']: return "🔴 Over"
-        if row['Act Hours'] < row['Est Hours'] and row['Act Hours'] > 0: return "🟢 Efficient"
-        if row['Status'] == 'Done': return "⚪ On Track"
-        return ""
+    col1.metric("Total Tasks", total_tasks)
+    col2.metric("Done", f"{completed_tasks} / {total_tasks}")
+    col3.metric("Total Est. Hours", f"{total_est}h")
+    col4.metric("Total Act. Hours", f"{total_act}h", delta=f"{total_act - total_est}h", delta_color="inverse")
 
-    df['Health'] = df.apply(get_health, axis=1)
-    df['Select'] = False 
+    st.write("")
 
-    # Header with Dynamic Buttons
-    col_h, col_edit, col_del, col_add = st.columns([3.5, 1.2, 1.2, 1.1])
-    col_h.subheader("WBS Task List")
+    # 2. DATA TABLE
+    st.subheader("Task Inventory")
     
-    if col_add.button("➕ Add New", use_container_width=True, type="primary"):
-        st.session_state.page = 'add_task'
-        st.rerun()
+    # Simple search bar
+    search = st.text_input("🔍 Search tasks by title...", "")
+    if search:
+        df = df[df['Title'].str.contains(search, case=False, na=False)]
 
-    # Data Editor
-    display_cols = ["Select", "Task ID", "Title", "Health", "Status", "Est Hours", "Act Hours", "Start Date", "End Date", "Completion %"]
-    edited_df = st.data_editor(
-        df[display_cols],
-        use_container_width=True,
-        hide_index=True,
+    # Display the table with progress bar
+    st.data_editor(
+        df,
         column_config={
-            "Select": st.column_config.CheckboxColumn("Select", default=False),
-            "Completion %": st.column_config.ProgressColumn("Progress", format="%d%%", min_value=0, max_value=100),
+            "Completion %": st.column_config.ProgressColumn(
+                "Progress",
+                help="Task completion percentage",
+                format="%d%%",
+                min_value=0,
+                max_value=100,
+            ),
+            "Status": st.column_config.SelectboxColumn(
+                "Status",
+                options=["To Do", "In Progress", "Done", "On Hold"],
+                required=True,
+            )
         },
-        disabled=[col for col in display_cols if col != "Select"]
+        hide_index=True,
+        use_container_width=True,
+        disabled=["Task ID"] # Only let them edit status/details
     )
 
-    selected_rows = edited_df[edited_df['Select'] == True]
+    # 3. SIDEBAR ACTIONS
+    with st.sidebar:
+        st.header("Actions")
+        if st.button("➕ Create New Task", use_container_width=True):
+            st.info("Form feature coming soon! Currently in Read-Only mode to fix Connection 400.")
+        
+        st.divider()
+        st.success("✅ Connected to Google Sheets")
+        st.caption(f"Last synced: {datetime.now().strftime('%H:%M:%S')}")
 
-    # Dynamic Update Button
-    if len(selected_rows) == 1:
-        if col_edit.button("✏️ Update Task", use_container_width=True):
-            st.session_state.edit_task_id = selected_rows.iloc[0]['Task ID']
-            st.session_state.page = 'update_task'
-            st.rerun()
-
-    # Dynamic Bulk Delete Button
-    if len(selected_rows) > 0:
-        if col_del.button(f"🗑️ Delete ({len(selected_rows)})", use_container_width=True):
-            confirm_delete_dialog(selected_rows['Task ID'].tolist())
+else:
+    st.warning("No data found. Please check if your Google Sheet is shared as 'Anyone with the link'.")
