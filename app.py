@@ -118,10 +118,8 @@ if st.session_state.page == 'edit_task' and 'editing_task_data' in st.session_st
         if update_btn:
             if edit_title:
                 with st.spinner("Updating records..."):
-                    # Pull original index references from execution dictionary
                     target_master_idx = st.session_state.editing_task_idx
                     
-                    # Mutate copy values directly onto targeted master dataframe row slice
                     st.session_state.df.at[target_master_idx, 'Title'] = edit_title
                     st.session_state.df.at[target_master_idx, 'Status'] = edit_status
                     st.session_state.df.at[target_master_idx, 'Est Hours'] = edit_est
@@ -129,14 +127,12 @@ if st.session_state.page == 'edit_task' and 'editing_task_data' in st.session_st
                     st.session_state.df.at[target_master_idx, 'Health'] = calc_health
                     st.session_state.df.at[target_master_idx, 'Completion %'] = calc_completion
                     
-                    # Reverse collection matrix order sequence back to source structure before cloud pushing
                     final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
                     final_values = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
                     
                     worksheet.clear()
                     worksheet.update('A1', final_values)
                     
-                    # Cleanup volatile execution states
                     del st.session_state.editing_task_data
                     del st.session_state.editing_task_idx
                     
@@ -195,31 +191,60 @@ selected_row_indices = []
 
 if "main_editor" in st.session_state:
     edits = st.session_state["main_editor"].get("edited_rows", {})
-    # Map out list index references that are actively checked "True"
     for local_str_idx, val in edits.items():
         if val.get("Select") is True:
             selected_row_indices.append(int(local_str_idx))
     any_selected = len(selected_row_indices) > 0
 
-# Edit button is enabled ONLY when exactly one row is checked
 can_edit = len(selected_row_indices) == 1
 
 with col_edit:
     if st.button("✏️ Edit Task", width="stretch", disabled=not can_edit):
-        # Translate local page data index reference to its master index value
         local_page_offset = selected_row_indices[0]
         master_df_index = start_idx + local_page_offset
-        
-        # Extract target item data record dictionary object
         target_record = st.session_state.df.iloc[master_df_index].to_dict()
         
-        # Save payload data references into active application session states
         st.session_state.editing_task_data = target_record
         st.session_state.editing_task_idx = master_df_index
         navigate_to('edit_task')
 
+# --- NEW FEATURE: BULK DELETE DIALOG POPUP ---
+@st.dialog("⚠️ Warning: Confirm Bulk Deletion")
+def show_delete_confirmation_modal(rows_to_delete_count, current_edited_df, start_index, end_index):
+    st.write(f"Are you sure you want to permanently delete **{rows_to_delete_count}** selected task(s)? This action cannot be undone.")
+    
+    # Render operational modal buttons side by side
+    m_col1, m_col2 = st.columns(2)
+    
+    with m_col1:
+        if st.button("Yes, Delete", type="primary", width="stretch"):
+            with st.spinner("Deleting selected rows..."):
+                # Filter out checked rows from current page viewport
+                rows_to_keep_on_page = current_edited_df[current_edited_df["Select"] == False].drop(columns=["Select"])
+                
+                # Splice and merge untouched slices with filtered slice
+                part_before = st.session_state.df.iloc[0:start_index]
+                part_after = st.session_state.df.iloc[end_index:]
+                new_total_df = pd.concat([part_before, rows_to_keep_on_page, part_after]).reset_index(drop=True)
+                
+                # Reverse to store into Google Sheets correctly
+                final_df_to_cloud = new_total_df.iloc[::-1].reset_index(drop=True)
+                final_data = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
+                
+                worksheet.clear()
+                worksheet.update('A1', final_data)
+                st.toast("Selected tasks deleted successfully!")
+                time.sleep(0.5)
+                st.rerun()
+                
+    with m_col2:
+        if st.button("Cancel", width="stretch"):
+            st.rerun()
+
 with col_bulk_del:
-    btn_del = st.button("🗑️ Bulk Delete", width="stretch", disabled=not any_selected)
+    # Triggering confirmation modal on click event instead of performing instant delete execution
+    if st.button("🗑️ Bulk Delete", width="stretch", disabled=not any_selected):
+        show_delete_confirmation_modal(len(selected_row_indices), st.session_state.current_edited_data, start_idx, end_idx)
 
 with col_add:
     if st.button("➕ Add New Task", width="stretch", type="primary"):
@@ -237,6 +262,9 @@ edited_df = st.data_editor(
     width="stretch",
     key="main_editor"
 )
+
+# Cache data editor payload reference for modal background processing access
+st.session_state.current_edited_data = edited_df
 
 # --- CLEAN PAGINATION NAVIGATION CONTROLBAR ---
 st.markdown("<div style='margin-top: -22px;'></div>", unsafe_allow_html=True)
@@ -273,7 +301,6 @@ if is_real_edit:
         updated_page_df = edited_df.drop(columns=["Select"])
         st.session_state.df.iloc[start_idx:end_idx] = updated_page_df
         
-        # Re-apply automated math metrics across modified row elements inline
         for idx in range(start_idx, min(end_idx, len(st.session_state.df))):
             row = st.session_state.df.iloc[idx]
             est, act, status = row['Est Hours'], row['Act Hours'], row['Status']
@@ -290,23 +317,5 @@ if is_real_edit:
         worksheet.clear()
         worksheet.update('A1', final_values)
         st.toast("Database Updated Automatically!")
-        time.sleep(0.2)
-        st.rerun()
-
-# --- BULK DELETE SYNC LOGIC ---
-if btn_del:
-    with st.spinner("Deleting selected rows..."):
-        rows_to_keep_on_page = edited_df[edited_df["Select"] == False].drop(columns=["Select"])
-        
-        part_before = st.session_state.df.iloc[0:start_idx]
-        part_after = st.session_state.df.iloc[end_idx:]
-        new_total_df = pd.concat([part_before, rows_to_keep_on_page, part_after]).reset_index(drop=True)
-        
-        final_df_to_cloud = new_total_df.iloc[::-1].reset_index(drop=True)
-        final_data = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
-        
-        worksheet.clear()
-        worksheet.update('A1', final_data)
-        st.toast("Deleted successfully!")
         time.sleep(0.2)
         st.rerun()
