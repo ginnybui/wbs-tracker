@@ -4,6 +4,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import time
 import math
+import os  # Dynamic environment support
 
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
@@ -13,7 +14,11 @@ def get_spreadsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
-    return client.open_by_key("1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4").worksheet("Data_DEV")
+    
+    # DYNAMIC CONFIGURATION: Reads target sheet from environment. Defaults to "Data_DEV".
+    sheet_name = os.getenv("GSHEET_NAME", "Data_DEV")
+    
+    return client.open_by_key("1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4").worksheet(sheet_name)
 
 try:
     worksheet = get_spreadsheet()
@@ -64,7 +69,6 @@ if st.session_state.page == 'add_new':
                     raw_df = load_data()
                     new_id = len(raw_df) + 1
                     
-                    # Compute initial auto-calculated properties
                     calc_completion = 100 if task_status == "Done" else 0
                     calc_health = "🟢 Efficient" if act_hours <= est_hours else "🔴 Overtime"
                     
@@ -102,11 +106,9 @@ if st.session_state.page == 'edit_task' and 'editing_task_data' in st.session_st
         edit_est = c1.number_input("Estimated Hours", min_value=0.0, step=0.5, value=float(task_data.get('Est Hours', 0.0)))
         edit_act = c2.number_input("Actual Hours", min_value=0.0, step=0.5, value=float(task_data.get('Act Hours', 0.0)))
         
-        # Auto-calculating Read-only feedback on form layout
         calc_completion = 100 if edit_status == "Done" else (0 if edit_status == "To Do" else int(task_data.get('Completion %', 0)))
         calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
         
-        # Display computed preview KPIs to user
         st.markdown(f"**Calculated Metrics Preview:** Status Health: `{calc_health}` | Completion Rate: `{calc_completion}%`")
         
         st.write("##")
@@ -150,16 +152,12 @@ if st.session_state.page == 'edit_task' and 'editing_task_data' in st.session_st
 # --- 6. PAGE: LIST VIEW ---
 st.title("📂 WBS Tracker")
 
-# Real-time Data Loading
 raw_df = load_data()
-
-# REVERSE DATA: Bring the newest records to the top row
 raw_df = raw_df.iloc[::-1].reset_index(drop=True)
 st.session_state.df = raw_df
 
 display_df = st.session_state.df.copy()
 
-# Header UI Spacing Optimization
 col_search, col_edit, col_bulk_del, col_add = st.columns([2.5, 1, 1, 1])
 
 with col_search:
@@ -185,7 +183,6 @@ page_df = display_df.iloc[start_idx:end_idx].copy()
 if "Select" not in page_df.columns:
     page_df.insert(0, "Select", False)
 
-# --- TRACK SELECTION AND STATE TRIGGERS ---
 any_selected = False
 selected_row_indices = []
 
@@ -208,26 +205,20 @@ with col_edit:
         st.session_state.editing_task_idx = master_df_index
         navigate_to('edit_task')
 
-# --- NEW FEATURE: BULK DELETE DIALOG POPUP ---
 @st.dialog("⚠️ Warning: Confirm Bulk Deletion")
 def show_delete_confirmation_modal(rows_to_delete_count, current_edited_df, start_index, end_index):
     st.write(f"Are you sure you want to permanently delete **{rows_to_delete_count}** selected task(s)? This action cannot be undone.")
-    
-    # Render operational modal buttons side by side
     m_col1, m_col2 = st.columns(2)
     
     with m_col1:
         if st.button("Yes, Delete", type="primary", width="stretch"):
             with st.spinner("Deleting selected rows..."):
-                # Filter out checked rows from current page viewport
                 rows_to_keep_on_page = current_edited_df[current_edited_df["Select"] == False].drop(columns=["Select"])
                 
-                # Splice and merge untouched slices with filtered slice
                 part_before = st.session_state.df.iloc[0:start_index]
                 part_after = st.session_state.df.iloc[end_index:]
                 new_total_df = pd.concat([part_before, rows_to_keep_on_page, part_after]).reset_index(drop=True)
                 
-                # Reverse to store into Google Sheets correctly
                 final_df_to_cloud = new_total_df.iloc[::-1].reset_index(drop=True)
                 final_data = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
                 
@@ -242,7 +233,6 @@ def show_delete_confirmation_modal(rows_to_delete_count, current_edited_df, star
             st.rerun()
 
 with col_bulk_del:
-    # Triggering confirmation modal on click event instead of performing instant delete execution
     if st.button("🗑️ Bulk Delete", width="stretch", disabled=not any_selected):
         show_delete_confirmation_modal(len(selected_row_indices), st.session_state.current_edited_data, start_idx, end_idx)
 
@@ -250,7 +240,6 @@ with col_add:
     if st.button("➕ Add New Task", width="stretch", type="primary"):
         navigate_to('add_new')
 
-# Render main data grid
 edited_df = st.data_editor(
     page_df,
     column_config={
@@ -263,12 +252,9 @@ edited_df = st.data_editor(
     key="main_editor"
 )
 
-# Cache data editor payload reference for modal background processing access
 st.session_state.current_edited_data = edited_df
 
-# --- CLEAN PAGINATION NAVIGATION CONTROLBAR ---
 st.markdown("<div style='margin-top: -22px;'></div>", unsafe_allow_html=True)
-
 p_col1, p_col2, p_col3, p_spacer = st.columns([1.2, 1.3, 1.2, 8.3])
 
 with p_col1:
@@ -290,7 +276,6 @@ with p_col3:
     if st.button("Next", width="stretch", disabled=st.session_state.current_page == total_pages):
         st.session_state.current_page += 1
         st.rerun()
-
 
 # --- TWO-WAY AUTO-SYNC TRIGGER (CELL INLINE EDITING) ---
 changes = st.session_state.main_editor.get("edited_rows", {})
