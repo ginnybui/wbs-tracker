@@ -5,40 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WBS Management Workspace</title>
     <style>
-        /* Remove default browser spaces to achieve a 100% full-screen layout */
+        /* Force the browser to remove all outer borders and margins */
         html, body {
             margin: 0 !important;
             padding: 0 !important;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Prevents double scrollbars */
-            background-color: #ffffff;
-        }
-
-        /* Full-screen mask container: Removes gray borders and crops the footer */
-        .wbs-tracker-fullscreen-container {
-            position: relative;
-            width: 100%;
-            height: 100vh;
+            width: 100% !important;
+            height: 100% !important;
+            background-color: #ffffff !important;
             overflow: hidden;
         }
 
-        /* Adjust iframe height to push the pagination bar upward into the view */
-        .wbs-tracker-fullscreen-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: calc(100% + 42px); 
+        /* Pure direct link presentation with absolutely no clipping masks */
+        iframe {
+            width: 100% !important;
+            height: 100% !important;
             border: none !important;
+            display: block !important;
         }
     </style>
 </head>
 <body>
 
-    <div class="wbs-tracker-fullscreen-container">
-        <iframe src="https://wbs-tracker-uat.streamlit.app/?embed=true"></iframe>
-    </div>
+    <iframe src="https://wbs-tracker-uat.streamlit.app/?embed=true"></iframe>
 
 </body>
 </html>
