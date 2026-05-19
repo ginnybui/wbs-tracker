@@ -232,7 +232,7 @@ if st.session_state.page == 'add_new':
                     if task_status == "Done":
                         calc_completion = 100
                         
-                    calc_health = "🟢 Efficient" # Starts fresh as efficient since actual hours = 0
+                    calc_health = "🟢 Efficient" 
                     
                     new_row = [new_id, task_title, calc_health, task_status, est_hours, 0.0, str(start_date), str(end_date), calc_completion]
                     worksheet.append_row(new_row)
@@ -274,6 +274,9 @@ elif st.session_state.page == 'edit_task':
                         
                         worksheet.clear()
                         worksheet.update('A1', final_data)
+                        
+                        if 'edit_completion_tracker' in st.session_state:
+                            del st.session_state.edit_completion_tracker
                         st.toast("Task deleted successfully!")
                         time.sleep(0.5)
                         navigate_to('list', 1)
@@ -312,17 +315,29 @@ elif st.session_state.page == 'edit_task':
             edit_start = c3.date_input("Start Date", value=default_start)
             edit_end = c4.date_input("End Date", value=default_end)
             
-            # --- HUMAN INPUT PROGRESS BAR CONTROLLER ---
+            # --- 🛠️ HUMAN INPUT PROGRESS BAR CONTROLLER (FIXED) 🛠️ ---
             try: current_completion_val = int(task_data.get('Completion %', 0))
             except: current_completion_val = 0
             
+            # Initialize or track state changes to handle realtime status swaps
+            if 'edit_completion_tracker' not in st.session_state:
+                st.session_state.edit_completion_tracker = current_completion_val
+
             if edit_status == "Done":
                 edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=100, disabled=True)
             elif edit_status == "To Do":
                 edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=0, disabled=True)
             else:
-                # Active project tracking mode - User pulls the progress scale manually
-                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=max(0, min(current_completion_val, 100)))
+                # Triggered when status is 'In Progress' or 'On Hold' -> Instantly interactive
+                # If moving out of To Do or Done, fallback gracefully to current tracked value
+                edit_completion = st.slider(
+                    "Completion %", 
+                    min_value=0, 
+                    max_value=100, 
+                    value=max(0, min(st.session_state.edit_completion_tracker, 100))
+                )
+                st.session_state.edit_completion_tracker = edit_completion
+            # -----------------------------------------------------------
             
             calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
             
@@ -342,6 +357,11 @@ elif st.session_state.page == 'edit_task':
                     with st.spinner("Updating records..."):
                         target_master_idx = st.session_state.editing_task_idx
                         
+                        # Apply static rule overwrites upon final confirmation
+                        final_completion = edit_completion
+                        if edit_status == "Done": final_completion = 100
+                        elif edit_status == "To Do": final_completion = 0
+
                         st.session_state.df.at[target_master_idx, 'Title'] = edit_title
                         st.session_state.df.at[target_master_idx, 'Status'] = edit_status
                         st.session_state.df.at[target_master_idx, 'Est Hours'] = edit_est
@@ -349,7 +369,7 @@ elif st.session_state.page == 'edit_task':
                         st.session_state.df.at[target_master_idx, 'Start Date'] = str(edit_start)
                         st.session_state.df.at[target_master_idx, 'End Date'] = str(edit_end)
                         st.session_state.df.at[target_master_idx, 'Health'] = calc_health
-                        st.session_state.df.at[target_master_idx, 'Completion %'] = edit_completion
+                        st.session_state.df.at[target_master_idx, 'Completion %'] = final_completion
                         
                         final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
                         final_values = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
@@ -359,6 +379,7 @@ elif st.session_state.page == 'edit_task':
                         
                         if 'editing_task_data' in st.session_state: del st.session_state.editing_task_data
                         if 'editing_task_idx' in st.session_state: del st.session_state.editing_task_idx
+                        if 'edit_completion_tracker' in st.session_state: del st.session_state.edit_completion_tracker
                         
                         st.toast("🚀 Task updated successfully!")
                         time.sleep(0.5)
@@ -369,6 +390,7 @@ elif st.session_state.page == 'edit_task':
             if cancel_btn:
                 if 'editing_task_data' in st.session_state: del st.session_state.editing_task_data
                 if 'editing_task_idx' in st.session_state: del st.session_state.editing_task_idx
+                if 'edit_completion_tracker' in st.session_state: del st.session_state.edit_completion_tracker
                 navigate_to('list')
                 
             if delete_btn:
