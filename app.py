@@ -19,11 +19,7 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* ==========================================
-       ULTIMATE STREAMLIT BRANDING REMOVAL PATCH
-       ========================================== */
-    
-    /* 1. Force hide the entire core footer element */
+    /* Force hide the core footer background line */
     footer {
         display: none !important;
         visibility: hidden !important;
@@ -31,42 +27,16 @@ st.markdown(
         height: 0 !important;
     }
 
-    /* 2. Target and destroy the modern "Hosted with Streamlit" crown container and management button */
-    div[data-testid="stManageAppButton"],
-    .stAppDeployDropdown, 
-    [data-testid="stAppDeployDropdown"],
-    div[class*="stAppDeployDropdown"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        pointer-events: none !important;
-    }
-
-    /* 3. Target and destroy the purple "Viewer / Connection" badge context */
-    [data-testid="stViewerBadge"],
-    div[class*="stViewerBadge"],
-    div[class*="stConnectionStatus"],
-    iframe[title="connection-status"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        pointer-events: none !important;
-    }
-
-    /* 4. Overwrite any default floating toolbar wrappers at the bottom right */
-    div:has(> [data-testid="stAppDeployDropdown"]),
-    div:has(> [data-testid="stViewerBadge"]) {
+    /* Target and shrink default manage buttons if any */
+    div[data-testid="stManageAppButton"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Minimize container top padding */
+    /* Minimize container bottom padding to make sure our custom bar covers the edge */
     .main .block-container {
         padding-top: 2rem !important;
+        padding-bottom: 60px !important; /* Leave space so table content isn't blocked by fixed footer */
     }
 
     /* Hide unnecessary toolbars on st.data_editor */
@@ -81,25 +51,32 @@ st.markdown(
     /* REMOVE STREAMLIT ELEMENT SPACING BELOW THE TABLE */
     div[data-testid="stVerticalBlockBorderWrapper"] + div, 
     div[data-testid="element-container"]:has(.custom-pagination-bar) {
-        margin-top: -24px !important; /* Forces the custom bar to snap directly upward */
+        margin-top: 0px !important;
     }
     
-    /* ULTRA FLUID HTML/CSS FLEXBOX PAGINATION BAR */
+    /* THE OVERRIDE FOOTER: Fixed bar that covers the entire bottom corner and blocks system icons */
     .custom-pagination-bar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 50px !important;
+        background-color: #111217 !important; /* Matches Streamlit's exact default Dark Mode background */
         display: flex !important;
         justify-content: flex-end !important;
         align-items: center !important;
-        width: 100% !important;
-        padding: 8px 0px !important;
+        padding: 0px 30px !important;
+        z-index: 999999 !important; /* Forces it to stay on top of ALL Streamlit floating buttons */
+        border-top: 1px solid #262730 !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Left-side total records description */
+    /* Left-side total records description inside the cover bar */
     .custom-pagination-bar .total-records {
         font-size: 13px !important;
-        color: #6c757d !important;
+        color: #a3a8b4 !important;
         font-weight: 500 !important;
-        margin-right: auto !important; /* Pushes the button cluster flawlessly to the absolute right border */
+        margin-right: auto !important;
         user-select: none;
     }
     
@@ -107,20 +84,21 @@ st.markdown(
     .custom-pagination-bar .button-group {
         display: flex !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 6px !important;
+        margin-right: 20px !important; /* Keeps pagination cluster safely away from the absolute edge */
     }
     
-    /* Custom Hyperlink Buttons mimicking native Streamlit UI metrics specs */
+    /* Custom Hyperlink Buttons adjusted for Dark Mode */
     .custom-pagination-bar .pag-btn {
-        height: 28px !important;
-        min-width: 32px !important;
-        padding: 0 8px !important;
-        border-radius: 4px !important;
+        height: 30px !important;
+        min-width: 34px !important;
+        padding: 0 10px !important;
+        border-radius: 6px !important;
         font-size: 13px !important;
         font-weight: 500 !important;
-        background-color: #ffffff !important;
-        border: 1px solid #dee2e6 !important;
-        color: #495057 !important;
+        background-color: #1e2029 !important;
+        border: 1px solid #414554 !important;
+        color: #e0e2e8 !important;
         text-decoration: none !important;
         display: inline-flex !important;
         align-items: center !important;
@@ -129,30 +107,30 @@ st.markdown(
     }
     
     .custom-pagination-bar .pag-btn:hover {
-        border-color: #adb5bd !important;
-        background-color: #f8f9fa !important;
-        color: #212529 !important;
+        border-color: #7a8296 !important;
+        background-color: #2a2d3d !important;
+        color: #ffffff !important;
     }
     
-    /* Disabled link button state */
+    /* Disabled link button state in Dark Mode */
     .custom-pagination-bar .pag-btn.disabled {
-        color: #ced4da !important;
-        background-color: #ffffff !important;
-        border-color: #e9ecef !important;
+        color: #495057 !important;
+        background-color: #15171c !important;
+        border-color: #2d3139 !important;
         pointer-events: none !important;
         cursor: not-allowed !important;
     }
     
     /* Center text indicators displaying 'X / Y' page layout metrics */
     .custom-pagination-bar .page-indicator {
-        height: 28px !important;
-        padding: 0 12px !important;
+        height: 30px !important;
+        padding: 0 14px !important;
         font-size: 13px !important;
         font-weight: 600 !important;
-        color: #212529 !important;
-        background-color: #f1f3f5 !important;
-        border: 1px solid #dee2e6 !important;
-        border-radius: 4px !important;
+        color: #ffffff !important;
+        background-color: #262730 !important;
+        border: 1px solid #414554 !important;
+        border-radius: 6px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -468,7 +446,7 @@ elif st.session_state.page == 'list':
 
     st.session_state.current_edited_data = edited_df
 
-    # --- CLEAN FLEXBOX PAGINATION INJECTION ---
+    # --- CLEAN FIXED OVERLAY PAGINATION INJECTION ---
     cp = st.session_state.current_page
     
     first_state = "disabled" if cp == 1 else ""
