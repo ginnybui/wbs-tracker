@@ -18,6 +18,15 @@ st.markdown(
         display: none !important;
         visibility: hidden !important;
     }
+
+    /* HIDE STREAMLIT MANAGEMENT BUTTON & FOOTER COMPLETELY */
+    div[data-testid="stManageAppButton"],
+    footer {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
     
     /* Minimize container top padding */
     .main .block-container {
