@@ -6,6 +6,7 @@ import time
 import math
 import os
 import re
+from datetime import datetime
 
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
@@ -33,6 +34,7 @@ st.markdown(
     }
 
     /* 3. Hide unnecessary toolbars on st.data_editor element */
+    .stDataFrame [data-testid="stElementToolbarvanishing"],
     .stDataFrame [data-testid="stElementToolbar"],
     [data-testid="stDataFrameToolbar"] {
         display: none !important;
@@ -291,6 +293,26 @@ elif st.session_state.page == 'edit_task':
             edit_est = c1.number_input("Estimated Hours", min_value=0.0, step=0.5, value=d_est)
             edit_act = c2.number_input("Actual Hours", min_value=0.0, step=0.5, value=d_act)
             
+            # --- NEW ADDITION: START DATE & END DATE EDITING FIELDS ---
+            c3, c4 = st.columns(2)
+            
+            # Safe parsing for Start Date
+            raw_start = task_data.get('Start Date', '')
+            try:
+                default_start = datetime.strptime(str(raw_start).strip(), "%Y-%m-%d").date()
+            except:
+                default_start = datetime.today().date()
+                
+            # Safe parsing for End Date
+            raw_end = task_data.get('End Date', '')
+            try:
+                default_end = datetime.strptime(str(raw_end).strip(), "%Y-%m-%d").date()
+            except:
+                default_end = datetime.today().date()
+
+            edit_start = c3.date_input("Start Date", value=default_start)
+            edit_end = c4.date_input("End Date", value=default_end)
+            
             calc_completion = 100 if edit_status == "Done" else (0 if edit_status == "To Do" else int(task_data.get('Completion %', 0)))
             calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
             
@@ -314,6 +336,8 @@ elif st.session_state.page == 'edit_task':
                         st.session_state.df.at[target_master_idx, 'Status'] = edit_status
                         st.session_state.df.at[target_master_idx, 'Est Hours'] = edit_est
                         st.session_state.df.at[target_master_idx, 'Act Hours'] = edit_act
+                        st.session_state.df.at[target_master_idx, 'Start Date'] = str(edit_start)
+                        st.session_state.df.at[target_master_idx, 'End Date'] = str(edit_end)
                         st.session_state.df.at[target_master_idx, 'Health'] = calc_health
                         st.session_state.df.at[target_master_idx, 'Completion %'] = calc_completion
                         
