@@ -9,37 +9,29 @@ import os
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
 
-# UI PERFECT RESOLUTION: Pull pagination directly up to the table border & clean vertical padding
+# UI CLEAN & RESPONSIVE: Thanh phân trang bám sát bảng, tự động đổi màu theo Light/Dark Mode
 st.markdown(
     """
     <style>
-    /* Hide default Streamlit header */
+    /* Ẩn header mặc định của Streamlit */
     header[data-testid="stHeader"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* Force hide the core footer background line */
-    footer {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0 !important;
-    }
-
-    /* Target and shrink default manage buttons if any */
-    div[data-testid="stManageAppButton"] {
+    /* Ẩn nút Manage App ở góc phải dưới nếu có */
+    div[data-testid="stManageAppButton"], footer {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Minimize container bottom padding to make sure our custom bar covers the edge */
+    /* Thu gọn khoảng cách padding của trang cho thoáng */
     .main .block-container {
         padding-top: 2rem !important;
-        padding-bottom: 60px !important; /* Leave space so table content isn't blocked by fixed footer */
+        padding-bottom: 2rem !important;
     }
 
-    /* Hide unnecessary toolbars on st.data_editor */
+    /* Ẩn các công cụ thừa trên st.data_editor */
     .stDataFrame [data-testid="stElementToolbar"],
     [data-testid="stDataFrameToolbar"] {
         display: none !important;
@@ -48,89 +40,76 @@ st.markdown(
         pointer-events: none !important;
     }
     
-    /* REMOVE STREAMLIT ELEMENT SPACING BELOW THE TABLE */
-    div[data-testid="stVerticalBlockBorderWrapper"] + div, 
-    div[data-testid="element-container"]:has(.custom-pagination-bar) {
-        margin-top: 0px !important;
-    }
-    
-    /* THE OVERRIDE FOOTER: Fixed bar that covers the entire bottom corner and blocks system icons */
+    /* ĐƯA THANH PHÂN TRANG VỀ DƯỚI CHÂN BẢNG (KHÔNG CỐ ĐỊNH ĐÁY) */
     .custom-pagination-bar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 50px !important;
-        background-color: #111217 !important; /* Matches Streamlit's exact default Dark Mode background */
+        margin-top: 12px !important;
         display: flex !important;
-        justify-content: flex-end !important;
+        justify-content: space-between !important;
         align-items: center !important;
-        padding: 0px 30px !important;
-        z-index: 999999 !important; /* Forces it to stay on top of ALL Streamlit floating buttons */
-        border-top: 1px solid #262730 !important;
+        padding: 10px 4px !important;
+        width: 100% !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Left-side total records description inside the cover bar */
+    /* Dòng thông báo tổng số dòng (Tự động đổi màu chữ theo theme hệ thống) */
     .custom-pagination-bar .total-records {
-        font-size: 13px !important;
-        color: #a3a8b4 !important;
+        font-size: 14px !important;
+        color: var(--text-color, #31333F) !important;
+        opacity: 0.8;
         font-weight: 500 !important;
-        margin-right: auto !important;
         user-select: none;
     }
     
-    /* Right-side button grouping */
+    /* Cụm nút bấm phân trang bên phải */
     .custom-pagination-bar .button-group {
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
-        margin-right: 20px !important; /* Keeps pagination cluster safely away from the absolute edge */
     }
     
-    /* Custom Hyperlink Buttons adjusted for Dark Mode */
+    /* Nút bấm thiết kế dạng trong suốt, tự động ăn màu viền và chữ theo Theme của Streamlit */
     .custom-pagination-bar .pag-btn {
-        height: 30px !important;
-        min-width: 34px !important;
+        height: 32px !important;
+        min-width: 36px !important;
         padding: 0 10px !important;
         border-radius: 6px !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         font-weight: 500 !important;
-        background-color: #1e2029 !important;
-        border: 1px solid #414554 !important;
-        color: #e0e2e8 !important;
+        background-color: transparent !important;
+        border: 1px solid var(--text-color, #31333F) !important;
+        color: var(--text-color, #31333F) !important;
         text-decoration: none !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: all 0.1s ease-in-out;
+        opacity: 0.8;
+        transition: all 0.15s ease-in-out;
     }
     
     .custom-pagination-bar .pag-btn:hover {
-        border-color: #7a8296 !important;
-        background-color: #2a2d3d !important;
-        color: #ffffff !important;
+        opacity: 1 !important;
+        background-color: rgba(128, 128, 128, 0.1) !important;
+        border-color: var(--primary-color, #FF4B4B) !important;
+        color: var(--primary-color, #FF4B4B) !important;
     }
     
-    /* Disabled link button state in Dark Mode */
+    /* Trạng thái nút bị vô hiệu hóa */
     .custom-pagination-bar .pag-btn.disabled {
-        color: #495057 !important;
-        background-color: #15171c !important;
-        border-color: #2d3139 !important;
+        opacity: 0.2 !important;
         pointer-events: none !important;
         cursor: not-allowed !important;
     }
     
-    /* Center text indicators displaying 'X / Y' page layout metrics */
+    /* Ô hiển thị số trang số X / Y */
     .custom-pagination-bar .page-indicator {
-        height: 30px !important;
+        height: 32px !important;
         padding: 0 14px !important;
         font-size: 13px !important;
         font-weight: 600 !important;
-        color: #ffffff !important;
-        background-color: #262730 !important;
-        border: 1px solid #414554 !important;
+        color: var(--text-color, #31333F) !important;
+        border: 1px solid var(--text-color, #31333F) !important;
         border-radius: 6px !important;
+        opacity: 0.5;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -146,10 +125,7 @@ def get_spreadsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
-    
-    # ENVIRONMENT CONFIGURATION: Route to Data_UAT as safe default fallback
     sheet_name = os.getenv("GSHEET_NAME", "Data_UAT")
-    
     return client.open_by_key("1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4").worksheet(sheet_name)
 
 try:
@@ -252,7 +228,6 @@ elif st.session_state.page == 'edit_task':
         task_data = st.session_state.editing_task_data
         st.title(f"✏️ Edit Task: {task_data.get('Title', '')}")
         
-        # Confirmation Modal Dialog for Edit Screen Deletion
         @st.dialog("⚠️ Confirm Task Deletion")
         def confirm_single_delete(target_idx, title_name):
             st.write(f"Are you sure you want to permanently delete the task: **{title_name}**?")
@@ -277,7 +252,6 @@ elif st.session_state.page == 'edit_task':
 
         with st.form("edit_task_form"):
             edit_title = st.text_input("Task Title (Required)*", value=str(task_data.get('Title', '')))
-            
             status_options = ["To Do", "In Progress", "Done", "On Hold"]
             current_status = task_data.get('Status', 'To Do')
             default_index = status_options.index(current_status) if current_status in status_options else 0
@@ -296,7 +270,6 @@ elif st.session_state.page == 'edit_task':
             calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
             
             st.markdown(f"**Calculated Metrics Preview:** Status Health: `{calc_health}` | Completion Rate: `{calc_completion}%`")
-            
             st.write("##")
             
             ebtn_col1, ebtn_col2, ebtn_col_space, ebtn_col_del = st.columns([1.3, 1, 4.7, 1.3])
@@ -405,7 +378,6 @@ elif st.session_state.page == 'list':
             if st.button("Yes, Delete", type="primary", width="stretch"):
                 with st.spinner("Deleting selected rows..."):
                     rows_to_keep_on_page = current_edited_df[current_edited_df["Select"] == False].drop(columns=["Select"])
-                    
                     part_before = st.session_state.df.iloc[0:start_index]
                     part_after = st.session_state.df.iloc[end_index:]
                     new_total_df = pd.concat([part_before, rows_to_keep_on_page, part_after]).reset_index(drop=True)
@@ -446,9 +418,8 @@ elif st.session_state.page == 'list':
 
     st.session_state.current_edited_data = edited_df
 
-    # --- CLEAN FIXED OVERLAY PAGINATION INJECTION ---
+    # --- IN-LINE RELATIVE PAGINATION BAR (NO FIXED OVERLAY) ---
     cp = st.session_state.current_page
-    
     first_state = "disabled" if cp == 1 else ""
     prev_state = "disabled" if cp == 1 else ""
     next_state = "disabled" if cp == total_pages else ""
@@ -480,7 +451,6 @@ elif st.session_state.page == 'list':
             for idx in range(start_idx, min(end_idx, len(st.session_state.df))):
                 row = st.session_state.df.iloc[idx]
                 est, act, status = row['Est Hours'], row['Act Hours'], row['Status']
-                
                 st.session_state.df.at[idx, 'Health'] = "🟢 Efficient" if act <= est else "🔴 Overtime"
                 if status == "Done":
                     st.session_state.df.at[idx, 'Completion %'] = 100
@@ -489,7 +459,6 @@ elif st.session_state.page == 'list':
 
             final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
             final_values = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
-            
             worksheet.clear()
             worksheet.update('A1', final_values)
             st.toast("Database Updated Automatically!")
