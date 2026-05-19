@@ -5,6 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import time
 import math
 import os
+import re
 
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
@@ -122,8 +123,35 @@ def get_spreadsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
+    
+    # 1. Fetch the target spreadsheet URL from dynamic secrets environment
+    target_url = st.secrets["gsheets"]["spreadsheet_url"]
+    
+    # 2. Extract the unique Spreadsheet ID key using a secure Regular Expression
+    spreadsheet_key_match = re.search(r"/d/([a-zA-Z0-9-_]+)", target_url)
+    if not spreadsheet_key_match:
+        raise ValueError("Invalid Google Sheets URL format detected in configuration secrets.")
+    
+    spreadsheet_key = spreadsheet_key_match.group(1)
+    
+    # 3. Extract the target Worksheet gid index from URL if present, else fallback to first index
+    gid_match = re.search(r"gid=(\d+)", target_url)
+    target_gid = gid_match.group(1) if gid_match else "0"
+    
+    # 4. Connect to the specified spreadsheet database instance safely
+    opened_spreadsheet = client.open_by_key(spreadsheet_key)
+    
+    # Find worksheet by matching GID for strict precision across environments
+    for sheet in opened_spreadsheet.worksheets():
+        if str(sheet.id) == target_gid:
+            return sheet
+            
+    # Fallback default safety routine if matching GID is missing
     sheet_name = os.getenv("GSHEET_NAME", "Data_UAT")
-    return client.open_by_key("1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4").worksheet(sheet_name)
+    try:
+        return opened_spreadsheet.worksheet(sheet_name)
+    except:
+        return opened_spreadsheet.get_worksheet(0)
 
 try:
     worksheet = get_spreadsheet()
