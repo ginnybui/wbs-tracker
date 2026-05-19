@@ -132,7 +132,10 @@ def get_spreadsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
-    sheet_name = os.getenv("GSHEET_NAME", "Data_DEV")
+    
+    # ENVIRONMENT CONFIGURATION: Route to Data_UAT as safe default fallback
+    sheet_name = os.getenv("GSHEET_NAME", "Data_UAT")
+    
     return client.open_by_key("1-5j3sNfaF41Yydcw4ozGspvg6Nvv5VqzuESuJILcTK4").worksheet(sheet_name)
 
 try:
@@ -235,7 +238,7 @@ elif st.session_state.page == 'edit_task':
         task_data = st.session_state.editing_task_data
         st.title(f"✏️ Edit Task: {task_data.get('Title', '')}")
         
-        # Hàm thông báo xác nhận xóa dạng Modal Dialog dành riêng cho màn hình Edit
+        # Confirmation Modal Dialog for Edit Screen Deletion
         @st.dialog("⚠️ Confirm Task Deletion")
         def confirm_single_delete(target_idx, title_name):
             st.write(f"Are you sure you want to permanently delete the task: **{title_name}**?")
@@ -244,10 +247,8 @@ elif st.session_state.page == 'edit_task':
             with m1:
                 if st.button("Yes, Delete", type="primary", use_container_width=True):
                     with st.spinner("Deleting record..."):
-                        # Loại bỏ hàng hiện tại ra khỏi dataframe tổng
                         st.session_state.df = st.session_state.df.drop(index=target_idx).reset_index(drop=True)
                         
-                        # Đảo ngược thứ tự dataframe lại trước khi đồng bộ lên Google Sheets
                         final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
                         final_data = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
                         
@@ -255,7 +256,7 @@ elif st.session_state.page == 'edit_task':
                         worksheet.update('A1', final_data)
                         st.toast("Task deleted successfully!")
                         time.sleep(0.5)
-                        navigate_to('list', 1) # Điều hướng về trang 1 của danh sách chính
+                        navigate_to('list', 1)
             with m2:
                 if st.button("Cancel", use_container_width=True):
                     st.rerun()
@@ -284,14 +285,12 @@ elif st.session_state.page == 'edit_task':
             
             st.write("##")
             
-            # UI UPDATE: Thêm nút Delete màu đỏ, xếp đặt tách biệt hẳn với nhóm Update/Cancel
             ebtn_col1, ebtn_col2, ebtn_col_space, ebtn_col_del = st.columns([1.3, 1, 4.7, 1.3])
             with ebtn_col1:
                 update_btn = st.form_submit_button("Update Task", type="primary", use_container_width=True)
             with ebtn_col2:
                 cancel_btn = st.form_submit_button("Cancel", use_container_width=True)
             with ebtn_col_del:
-                # Nút bấm submit trong form kích hoạt trigger Dialog xác nhận xóa
                 delete_btn = st.form_submit_button("🗑️ Delete", use_container_width=True)
             
             if update_btn:
@@ -327,7 +326,6 @@ elif st.session_state.page == 'edit_task':
                 navigate_to('list')
                 
             if delete_btn:
-                # Gọi hộp thoại modal cảnh báo xóa khi người dùng bấm nút Delete
                 confirm_single_delete(st.session_state.editing_task_idx, edit_title)
 
 # --- 6. PAGE: LIST VIEW (MAIN DASHBOARD) ---
@@ -455,7 +453,6 @@ elif st.session_state.page == 'list':
     </div>
     """
     st.markdown(pagination_html, unsafe_allow_html=True)
-
 
     # --- TWO-WAY INLINE AUTO-SYNC TRIGGER ---
     changes = st.session_state.main_editor.get("edited_rows", {})
