@@ -5,43 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WBS Management Workspace</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8fafc;
+        /* Remove default browser spaces to achieve a 100% full-screen layout */
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevents double scrollbars */
+            background-color: #ffffff;
         }
-        .container-title {
-            color: #1e293b;
-            margin-bottom: 16px;
-            font-size: 22px;
-            font-weight: 600;
-        }
-        .wbs-tracker-mask {
+
+        /* Full-screen mask container: Removes gray borders and crops the footer */
+        .wbs-tracker-fullscreen-container {
             position: relative;
             width: 100%;
-            height: 85vh;
+            height: 100vh;
             overflow: hidden;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
-        .wbs-tracker-mask iframe {
+
+        /* Adjust iframe height to push the pagination bar upward into the view */
+        .wbs-tracker-fullscreen-container iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: calc(100% + 56px);
-            border: none;
+            height: calc(100% + 42px); 
+            border: none !important;
         }
     </style>
 </head>
 <body>
 
-    <div class="container-title">📊 Production WBS Tracker Workspace</div>
-    
-    <div class="wbs-tracker-mask">
+    <div class="wbs-tracker-fullscreen-container">
         <iframe src="https://wbs-tracker-uat.streamlit.app/?embed=true"></iframe>
     </div>
 
