@@ -9,7 +9,7 @@ import os
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
 
-# UI CLEANING COOKBOOK: Target and wipe out all default headers, footers, and floating cloud action buttons
+# UI CLEANING COOKBOOK: Streamlined for optimal iframe embedding
 st.markdown(
     """
     <style>
@@ -19,32 +19,19 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* 2. CRITICAL FIX: Hide the Floating Cloud Toolbar Buttons (Crown/Avatar) on the bottom right */
-    div[data-testid="stManageAppButton"],
-    button[id="open-sharing-sign-in-dialog"],
-    .stAppToolbar,
-    div[class*="stDeployButton"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0 !important;
-        width: 0 !important;
-        pointer-events: none !important;
-    }
-
-    /* 3. Hide default Streamlit bottom footer */
+    /* 2. Hide default Streamlit bottom footer layout */
     footer {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Optimize view padding spaces */
+    /* Optimize view padding spaces inside the canvas */
     .main .block-container {
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
     }
 
-    /* 4. Hide unnecessary toolbars on st.data_editor element */
+    /* 3. Hide unnecessary toolbars on st.data_editor element */
     .stDataFrame [data-testid="stElementToolbar"],
     [data-testid="stDataFrameToolbar"] {
         display: none !important;
@@ -53,7 +40,7 @@ st.markdown(
         pointer-events: none !important;
     }
     
-    /* 5. INLINE PAGINATION BAR LAYOUT (Sits nicely underneath the table) */
+    /* 4. INLINE PAGINATION BAR LAYOUT (Sits cleanly right underneath the table) */
     .custom-pagination-bar {
         margin-top: 14px !important;
         display: flex !important;
