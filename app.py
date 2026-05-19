@@ -19,15 +19,49 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* FORCE HIDE STREAMLIT MANAGEMENT, HOSTED BUTTONS & PUBLIC BADGES */
-    div[data-testid="stManageAppButton"],
-    .stAppDeployDropdown,
-    [data-testid="stViewerBadge"],
+    /* ==========================================
+       ULTIMATE STREAMLIT BRANDING REMOVAL PATCH
+       ========================================== */
+    
+    /* 1. Force hide the entire core footer element */
     footer {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
+        height: 0 !important;
+    }
+
+    /* 2. Target and destroy the modern "Hosted with Streamlit" crown container and management button */
+    div[data-testid="stManageAppButton"],
+    .stAppDeployDropdown, 
+    [data-testid="stAppDeployDropdown"],
+    div[class*="stAppDeployDropdown"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
         pointer-events: none !important;
+    }
+
+    /* 3. Target and destroy the purple "Viewer / Connection" badge context */
+    [data-testid="stViewerBadge"],
+    div[class*="stViewerBadge"],
+    div[class*="stConnectionStatus"],
+    iframe[title="connection-status"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* 4. Overwrite any default floating toolbar wrappers at the bottom right */
+    div:has(> [data-testid="stAppDeployDropdown"]),
+    div:has(> [data-testid="stViewerBadge"]) {
+        display: none !important;
+        visibility: hidden !important;
     }
     
     /* Minimize container top padding */
