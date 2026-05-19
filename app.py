@@ -19,8 +19,10 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* HIDE STREAMLIT MANAGEMENT BUTTON & FOOTER COMPLETELY */
+    /* FORCE HIDE STREAMLIT MANAGEMENT, HOSTED BUTTONS & PUBLIC BADGES */
     div[data-testid="stManageAppButton"],
+    .stAppDeployDropdown,
+    [data-testid="stViewerBadge"],
     footer {
         display: none !important;
         visibility: hidden !important;
@@ -481,49 +483,3 @@ elif st.session_state.page == 'list':
             st.toast("Database Updated Automatically!")
             time.sleep(0.2)
             st.rerun()
-
-# --- 7. SECURITY & INTERFACE PATCH: FORCE HIDE MANAGE APP BUTTON ---
-import streamlit.components.v1 as components
-
-components.html(
-    """
-    <script>
-    function injectHideStyles() {
-        // 1. Target the main document context
-        const mainStyle = document.createElement('style');
-        mainStyle.innerHTML = `
-            div[data-testid="stManageAppButton"], footer {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-        `;
-        window.parent.document.head.appendChild(mainStyle);
-
-        // 2. Deep scan and bypass Shadow DOM containers (Streamlit Cloud security layer)
-        const hostContainers = window.parent.document.querySelectorAll('*');
-        hostContainers.forEach(el => {
-            if (el.shadowRoot) {
-                const shadowStyle = document.createElement('style');
-                shadowStyle.innerHTML = `
-                    div[data-testid="stManageAppButton"], footer, button, .st-emotion-cache-1lb4vcc {
-                        display: none !important;
-                        visibility: hidden !important;
-                        opacity: 0 !important;
-                        pointer-events: none !important;
-                    }
-                `;
-                el.shadowRoot.appendChild(shadowStyle);
-            }
-        });
-    }
-
-    // Run injection immediately and set intervals to prevent the button from rendering back
-    setTimeout(injectHideStyles, 100);
-    setInterval(injectHideStyles, 1000);
-    </script>
-    """,
-    height=0,
-    width=0,
-)
