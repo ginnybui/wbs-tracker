@@ -5,22 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WBS Management Workspace</title>
     <style>
-        /* Force the browser to remove all outer borders and margins */
         html, body {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
             height: 100% !important;
             background-color: #ffffff !important;
-            overflow: hidden;
+            /* Crucial: This cuts off the extra 50px where the Streamlit footer is hidden */
+            overflow: hidden !important; 
         }
 
-        /* Pure direct link presentation with absolutely no clipping masks */
         iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100% !important;
-            height: 100% !important;
+            /* Clever trick: Push the footer 50px below the visible screen area */
+            height: calc(100% + 50px) !important; 
             border: none !important;
-            display: block !important;
         }
     </style>
 </head>
