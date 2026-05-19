@@ -9,29 +9,42 @@ import os
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
 
-# UI CLEAN & RESPONSIVE: Thanh phân trang bám sát bảng, tự động đổi màu theo Light/Dark Mode
+# UI PERFECT EMBED CLEAN: Aggressively removes Streamlit headers, footers, and embed platform badges
 st.markdown(
     """
     <style>
-    /* Ẩn header mặc định của Streamlit */
+    /* 1. Hide default Streamlit Header */
     header[data-testid="stHeader"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* Ẩn nút Manage App ở góc phải dưới nếu có */
-    div[data-testid="stManageAppButton"], footer {
+    /* 2. Hide default Streamlit Footer and Cloud Platform Buttons */
+    footer, div[data-testid="stManageAppButton"] {
         display: none !important;
         visibility: hidden !important;
-    }
-    
-    /* Thu gọn khoảng cách padding của trang cho thoáng */
-    .main .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
+        opacity: 0 !important;
+        height: 0 !important;
     }
 
-    /* Ẩn các công cụ thừa trên st.data_editor */
+    /* 3. EMBED MODE SPECIAL FIX: Hide "Built with Streamlit" & "Fullscreen" overlay bar */
+    iframe[title="streamlitApp"], 
+    .stAppViewer, 
+    div[data-testid="stStatusWidget"],
+    [data-testid="embedFooter"],
+    .viewerFooter {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+    
+    /* Optimize main content box spacing */
+    .main .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* 4. Hide unnecessary toolbars on st.data_editor */
     .stDataFrame [data-testid="stElementToolbar"],
     [data-testid="stDataFrameToolbar"] {
         display: none !important;
@@ -40,9 +53,9 @@ st.markdown(
         pointer-events: none !important;
     }
     
-    /* ĐƯA THANH PHÂN TRANG VỀ DƯỚI CHÂN BẢNG (KHÔNG CỐ ĐỊNH ĐÁY) */
+    /* 5. STYLE THE PAGINATION BAR (Sits cleanly right underneath the table) */
     .custom-pagination-bar {
-        margin-top: 12px !important;
+        margin-top: 14px !important;
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
@@ -51,7 +64,7 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Dòng thông báo tổng số dòng (Tự động đổi màu chữ theo theme hệ thống) */
+    /* Text adapts automatically according to Light / Dark Mode system values */
     .custom-pagination-bar .total-records {
         font-size: 14px !important;
         color: var(--text-color, #31333F) !important;
@@ -60,14 +73,13 @@ st.markdown(
         user-select: none;
     }
     
-    /* Cụm nút bấm phân trang bên phải */
     .custom-pagination-bar .button-group {
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
     }
     
-    /* Nút bấm thiết kế dạng trong suốt, tự động ăn màu viền và chữ theo Theme của Streamlit */
+    /* Clean minimal pagination link button elements */
     .custom-pagination-bar .pag-btn {
         height: 32px !important;
         min-width: 36px !important;
@@ -82,25 +94,23 @@ st.markdown(
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        opacity: 0.8;
+        opacity: 0.7;
         transition: all 0.15s ease-in-out;
     }
     
     .custom-pagination-bar .pag-btn:hover {
         opacity: 1 !important;
-        background-color: rgba(128, 128, 128, 0.1) !important;
+        background-color: rgba(128, 128, 128, 0.08) !important;
         border-color: var(--primary-color, #FF4B4B) !important;
         color: var(--primary-color, #FF4B4B) !important;
     }
     
-    /* Trạng thái nút bị vô hiệu hóa */
     .custom-pagination-bar .pag-btn.disabled {
-        opacity: 0.2 !important;
+        opacity: 0.15 !important;
         pointer-events: none !important;
         cursor: not-allowed !important;
     }
     
-    /* Ô hiển thị số trang số X / Y */
     .custom-pagination-bar .page-indicator {
         height: 32px !important;
         padding: 0 14px !important;
@@ -418,7 +428,7 @@ elif st.session_state.page == 'list':
 
     st.session_state.current_edited_data = edited_df
 
-    # --- IN-LINE RELATIVE PAGINATION BAR (NO FIXED OVERLAY) ---
+    # --- IN-LINE RELATIVE PAGINATION BAR ---
     cp = st.session_state.current_page
     first_state = "disabled" if cp == 1 else ""
     prev_state = "disabled" if cp == 1 else ""
@@ -427,7 +437,7 @@ elif st.session_state.page == 'list':
     
     pagination_html = f"""
     <div class="custom-pagination-bar">
-        <div class="total-records">Found total {total_rows} records</div>
+        <div class="total-records">Total records found: {total_rows}</div>
         <div class="button-group">
             <a class="pag-btn {first_state}" href="?page=list&p=1" target="_self">«</a>
             <a class="pag-btn {prev_state}" href="?page=list&p={max(1, cp - 1)}" target="_self">‹</a>
