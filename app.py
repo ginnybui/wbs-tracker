@@ -9,42 +9,42 @@ import os
 # --- 1. SETTINGS & CONNECTION ---
 st.set_page_config(page_title="WBS Tracker Pro", layout="wide")
 
-# UI PERFECT EMBED CLEAN: Aggressively removes Streamlit headers, footers, and embed platform badges
+# UI CLEANING COOKBOOK: Target and wipe out all default headers, footers, and floating cloud action buttons
 st.markdown(
     """
     <style>
-    /* 1. Hide default Streamlit Header */
+    /* 1. Hide default Streamlit Top Header Bar */
     header[data-testid="stHeader"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* 2. Hide default Streamlit Footer and Cloud Platform Buttons */
-    footer, div[data-testid="stManageAppButton"] {
+    /* 2. CRITICAL FIX: Hide the Floating Cloud Toolbar Buttons (Crown/Avatar) on the bottom right */
+    div[data-testid="stManageAppButton"],
+    button[id="open-sharing-sign-in-dialog"],
+    .stAppToolbar,
+    div[class*="stDeployButton"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0 !important;
+        width: 0 !important;
+        pointer-events: none !important;
     }
 
-    /* 3. EMBED MODE SPECIAL FIX: Hide "Built with Streamlit" & "Fullscreen" overlay bar */
-    iframe[title="streamlitApp"], 
-    .stAppViewer, 
-    div[data-testid="stStatusWidget"],
-    [data-testid="embedFooter"],
-    .viewerFooter {
+    /* 3. Hide default Streamlit bottom footer */
+    footer {
         display: none !important;
         visibility: hidden !important;
-        height: 0 !important;
     }
     
-    /* Optimize main content box spacing */
+    /* Optimize view padding spaces */
     .main .block-container {
         padding-top: 2rem !important;
-        padding-bottom: 1rem !important;
+        padding-bottom: 2rem !important;
     }
 
-    /* 4. Hide unnecessary toolbars on st.data_editor */
+    /* 4. Hide unnecessary toolbars on st.data_editor element */
     .stDataFrame [data-testid="stElementToolbar"],
     [data-testid="stDataFrameToolbar"] {
         display: none !important;
@@ -53,7 +53,7 @@ st.markdown(
         pointer-events: none !important;
     }
     
-    /* 5. STYLE THE PAGINATION BAR (Sits cleanly right underneath the table) */
+    /* 5. INLINE PAGINATION BAR LAYOUT (Sits nicely underneath the table) */
     .custom-pagination-bar {
         margin-top: 14px !important;
         display: flex !important;
@@ -64,7 +64,7 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Text adapts automatically according to Light / Dark Mode system values */
+    /* Smart labels adapt cleanly to both Light and Dark mode system backgrounds */
     .custom-pagination-bar .total-records {
         font-size: 14px !important;
         color: var(--text-color, #31333F) !important;
@@ -79,7 +79,7 @@ st.markdown(
         gap: 6px !important;
     }
     
-    /* Clean minimal pagination link button elements */
+    /* Minimalistic standard tracking look for pagination links */
     .custom-pagination-bar .pag-btn {
         height: 32px !important;
         min-width: 36px !important;
