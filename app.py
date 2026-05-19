@@ -204,15 +204,14 @@ if st.session_state.page == 'add_new':
     
     with st.form("new_task_form", clear_on_submit=True):
         task_title = st.text_input("Task Title (Required)*")
-        task_status = st.selectbox("Status", options=["To Do", "In Progress", "Done", "On Hold"])
+        task_status = st.selectbox("Status", options=["To Do", "In Progress", "On Hold"])
         
         c1, c2 = st.columns(2)
-        est_hours = c1.number_input("Estimated Hours", min_value=0.0, step=0.5)
-        act_hours = c2.number_input("Actual Hours", min_value=0.0, step=0.5)
+        est_hours = c1.number_input("Estimated Hours", min_value=0.0, step=0.5, value=0.0)
         
         c3, c4 = st.columns(2)
-        start_date = c3.date_input("Start Date")
-        end_date = c4.date_input("End Date")
+        start_date = c3.date_input("Start Date", value=datetime.today().date())
+        end_date = c4.date_input("End Date", value=datetime.today().date())
         
         st.write("##") 
         
@@ -227,10 +226,15 @@ if st.session_state.page == 'add_new':
                 with st.spinner("Saving to Cloud..."):
                     raw_df = load_data()
                     new_id = len(raw_df) + 1
-                    calc_completion = 100 if task_status == "Done" else 0
-                    calc_health = "🟢 Efficient" if act_hours <= est_hours else "🔴 Overtime"
                     
-                    new_row = [new_id, task_title, calc_health, task_status, est_hours, act_hours, str(start_date), str(end_date), calc_completion]
+                    # Core initialization rulebook
+                    calc_completion = 0
+                    if task_status == "Done":
+                        calc_completion = 100
+                        
+                    calc_health = "🟢 Efficient" # Starts fresh as efficient since actual hours = 0
+                    
+                    new_row = [new_id, task_title, calc_health, task_status, est_hours, 0.0, str(start_date), str(end_date), calc_completion]
                     worksheet.append_row(new_row)
                     
                     if 'df' in st.session_state: 
@@ -279,6 +283,7 @@ elif st.session_state.page == 'edit_task':
 
         with st.form("edit_task_form"):
             edit_title = st.text_input("Task Title (Required)*", value=str(task_data.get('Title', '')))
+            
             status_options = ["To Do", "In Progress", "Done", "On Hold"]
             current_status = task_data.get('Status', 'To Do')
             default_index = status_options.index(current_status) if current_status in status_options else 0
@@ -293,30 +298,35 @@ elif st.session_state.page == 'edit_task':
             edit_est = c1.number_input("Estimated Hours", min_value=0.0, step=0.5, value=d_est)
             edit_act = c2.number_input("Actual Hours", min_value=0.0, step=0.5, value=d_act)
             
-            # --- NEW ADDITION: START DATE & END DATE EDITING FIELDS ---
             c3, c4 = st.columns(2)
             
-            # Safe parsing for Start Date
+            # Safe date string processing
             raw_start = task_data.get('Start Date', '')
-            try:
-                default_start = datetime.strptime(str(raw_start).strip(), "%Y-%m-%d").date()
-            except:
-                default_start = datetime.today().date()
+            try: default_start = datetime.strptime(str(raw_start).strip(), "%Y-%m-%d").date()
+            except: default_start = datetime.today().date()
                 
-            # Safe parsing for End Date
             raw_end = task_data.get('End Date', '')
-            try:
-                default_end = datetime.strptime(str(raw_end).strip(), "%Y-%m-%d").date()
-            except:
-                default_end = datetime.today().date()
+            try: default_end = datetime.strptime(str(raw_end).strip(), "%Y-%m-%d").date()
+            except: default_end = datetime.today().date()
 
             edit_start = c3.date_input("Start Date", value=default_start)
             edit_end = c4.date_input("End Date", value=default_end)
             
-            calc_completion = 100 if edit_status == "Done" else (0 if edit_status == "To Do" else int(task_data.get('Completion %', 0)))
+            # --- HUMAN INPUT PROGRESS BAR CONTROLLER ---
+            try: current_completion_val = int(task_data.get('Completion %', 0))
+            except: current_completion_val = 0
+            
+            if edit_status == "Done":
+                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=100, disabled=True)
+            elif edit_status == "To Do":
+                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=0, disabled=True)
+            else:
+                # Active project tracking mode - User pulls the progress scale manually
+                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=max(0, min(current_completion_val, 100)))
+            
             calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
             
-            st.markdown(f"**Calculated Metrics Preview:** Status Health: `{calc_health}` | Completion Rate: `{calc_completion}%`")
+            st.markdown(f"**Calculated Metrics:** Status Health: `{calc_health}`")
             st.write("##")
             
             ebtn_col1, ebtn_col2, ebtn_col_space, ebtn_col_del = st.columns([1.3, 1, 4.7, 1.3])
@@ -339,7 +349,7 @@ elif st.session_state.page == 'edit_task':
                         st.session_state.df.at[target_master_idx, 'Start Date'] = str(edit_start)
                         st.session_state.df.at[target_master_idx, 'End Date'] = str(edit_end)
                         st.session_state.df.at[target_master_idx, 'Health'] = calc_health
-                        st.session_state.df.at[target_master_idx, 'Completion %'] = calc_completion
+                        st.session_state.df.at[target_master_idx, 'Completion %'] = edit_completion
                         
                         final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
                         final_values = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
