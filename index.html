@@ -11,24 +11,34 @@
             width: 100% !important;
             height: 100% !important;
             background-color: #ffffff !important;
-            /* Crucial: This cuts off the extra 50px where the Streamlit footer is hidden */
-            overflow: hidden !important; 
+            overflow: hidden !important;
         }
 
         iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100% !important;
-            /* Clever trick: Push the footer 50px below the visible screen area */
-            height: calc(100% + 50px) !important; 
+            height: 100% !important;
             border: none !important;
+            display: block !important;
+        }
+
+        /* A smart transparent shield overlay to perfectly cover Streamlit's footer watermark */
+        .footer-mask-shield {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px; /* Precise height to block out the footer text */
+            background-color: #ffffff; /* Matches the clean white application background */
+            z-index: 99999; /* Forces the shield to always stay on top */
+            pointer-events: none; /* CRITICAL: Mouse clicks pass through perfectly to reach pagination buttons */
         }
     </style>
 </head>
 <body>
 
     <iframe src="https://wbs-tracker-uat.streamlit.app/?embed=true"></iframe>
+    
+    <div class="footer-mask-shield"></div>
 
 </body>
 </html>
