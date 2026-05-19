@@ -43,7 +43,7 @@ st.markdown(
         pointer-events: none !important;
     }
     
-    /* 4. INLINE PAGINATION BAR LAYOUT (Sits cleanly right underneath the table) */
+    /* 4. INLINE PAGINATION BAR LAYOUT */
     .custom-pagination-bar {
         margin-top: 14px !important;
         display: flex !important;
@@ -54,7 +54,6 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Smart labels adapt cleanly to both Light and Dark mode system backgrounds */
     .custom-pagination-bar .total-records {
         font-size: 14px !important;
         color: var(--text-color, #31333F) !important;
@@ -69,7 +68,6 @@ st.markdown(
         gap: 6px !important;
     }
     
-    /* Minimalistic standard tracking look for pagination links */
     .custom-pagination-bar .pag-btn {
         height: 32px !important;
         min-width: 36px !important;
@@ -126,29 +124,20 @@ def get_spreadsheet():
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
     
-    # 1. Fetch the target spreadsheet URL from dynamic secrets environment
     target_url = st.secrets["gsheets"]["spreadsheet_url"]
-    
-    # 2. Extract the unique Spreadsheet ID key using a secure Regular Expression
     spreadsheet_key_match = re.search(r"/d/([a-zA-Z0-9-_]+)", target_url)
     if not spreadsheet_key_match:
         raise ValueError("Invalid Google Sheets URL format detected in configuration secrets.")
     
     spreadsheet_key = spreadsheet_key_match.group(1)
-    
-    # 3. Extract the target Worksheet gid index from URL if present, else fallback to first index
     gid_match = re.search(r"gid=(\d+)", target_url)
     target_gid = gid_match.group(1) if gid_match else "0"
     
-    # 4. Connect to the specified spreadsheet database instance safely
     opened_spreadsheet = client.open_by_key(spreadsheet_key)
-    
-    # Find worksheet by matching GID for strict precision across environments
     for sheet in opened_spreadsheet.worksheets():
         if str(sheet.id) == target_gid:
             return sheet
             
-    # Fallback default safety routine if matching GID is missing
     sheet_name = os.getenv("GSHEET_NAME", "Data_UAT")
     try:
         return opened_spreadsheet.worksheet(sheet_name)
@@ -227,7 +216,6 @@ if st.session_state.page == 'add_new':
                     raw_df = load_data()
                     new_id = len(raw_df) + 1
                     
-                    # Core initialization rulebook
                     calc_completion = 0
                     if task_status == "Done":
                         calc_completion = 100
@@ -268,15 +256,10 @@ elif st.session_state.page == 'edit_task':
                 if st.button("Yes, Delete", type="primary", use_container_width=True):
                     with st.spinner("Deleting record..."):
                         st.session_state.df = st.session_state.df.drop(index=target_idx).reset_index(drop=True)
-                        
                         final_df_to_cloud = st.session_state.df.iloc[::-1].reset_index(drop=True)
                         final_data = [final_df_to_cloud.columns.values.tolist()] + final_df_to_cloud.values.tolist()
-                        
                         worksheet.clear()
                         worksheet.update('A1', final_data)
-                        
-                        if 'edit_completion_tracker' in st.session_state:
-                            del st.session_state.edit_completion_tracker
                         st.toast("Task deleted successfully!")
                         time.sleep(0.5)
                         navigate_to('list', 1)
@@ -284,14 +267,30 @@ elif st.session_state.page == 'edit_task':
                 if st.button("Cancel", use_container_width=True):
                     st.rerun()
 
-        with st.form("edit_task_form"):
-            edit_title = st.text_input("Task Title (Required)*", value=str(task_data.get('Title', '')))
-            
-            status_options = ["To Do", "In Progress", "Done", "On Hold"]
-            current_status = task_data.get('Status', 'To Do')
-            default_index = status_options.index(current_status) if current_status in status_options else 0
-            edit_status = st.selectbox("Status", options=status_options, index=default_index)
-            
+        # --- 🌟 FIX SLIDER LOCK BY PLACING THEM OUTSIDE st.form 🌟 ---
+        edit_title = st.text_input("Task Title (Required)*", value=str(task_data.get('Title', '')))
+        
+        status_options = ["To Do", "In Progress", "Done", "On Hold"]
+        current_status = task_data.get('Status', 'To Do')
+        default_index = status_options.index(current_status) if current_status in status_options else 0
+        
+        # Being outside the form, this selectbox immediately triggers a rerun on state changes
+        edit_status = st.selectbox("Status", options=status_options, index=default_index)
+        
+        try: current_completion_val = int(task_data.get('Completion %', 0))
+        except: current_completion_val = 0
+        
+        # Real-time reactive slider controller
+        if edit_status == "Done":
+            edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=100, disabled=True)
+        elif edit_status == "To Do":
+            edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=0, disabled=True)
+        else:
+            # Instantly becomes editable and responsive when switching to In Progress or On Hold
+            edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=max(0, min(current_completion_val, 100)))
+
+        # Static informational values wrapped back inside a form for consistent design layout
+        with st.form("edit_task_details_form"):
             c1, c2 = st.columns(2)
             try: d_est = float(task_data.get('Est Hours', 0.0))
             except: d_est = 0.0
@@ -302,8 +301,6 @@ elif st.session_state.page == 'edit_task':
             edit_act = c2.number_input("Actual Hours", min_value=0.0, step=0.5, value=d_act)
             
             c3, c4 = st.columns(2)
-            
-            # Safe date string processing
             raw_start = task_data.get('Start Date', '')
             try: default_start = datetime.strptime(str(raw_start).strip(), "%Y-%m-%d").date()
             except: default_start = datetime.today().date()
@@ -315,32 +312,7 @@ elif st.session_state.page == 'edit_task':
             edit_start = c3.date_input("Start Date", value=default_start)
             edit_end = c4.date_input("End Date", value=default_end)
             
-            # --- 🛠️ HUMAN INPUT PROGRESS BAR CONTROLLER (FIXED) 🛠️ ---
-            try: current_completion_val = int(task_data.get('Completion %', 0))
-            except: current_completion_val = 0
-            
-            # Initialize or track state changes to handle realtime status swaps
-            if 'edit_completion_tracker' not in st.session_state:
-                st.session_state.edit_completion_tracker = current_completion_val
-
-            if edit_status == "Done":
-                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=100, disabled=True)
-            elif edit_status == "To Do":
-                edit_completion = st.slider("Completion %", min_value=0, max_value=100, value=0, disabled=True)
-            else:
-                # Triggered when status is 'In Progress' or 'On Hold' -> Instantly interactive
-                # If moving out of To Do or Done, fallback gracefully to current tracked value
-                edit_completion = st.slider(
-                    "Completion %", 
-                    min_value=0, 
-                    max_value=100, 
-                    value=max(0, min(st.session_state.edit_completion_tracker, 100))
-                )
-                st.session_state.edit_completion_tracker = edit_completion
-            # -----------------------------------------------------------
-            
             calc_health = "🟢 Efficient" if edit_act <= edit_est else "🔴 Overtime"
-            
             st.markdown(f"**Calculated Metrics:** Status Health: `{calc_health}`")
             st.write("##")
             
@@ -357,7 +329,6 @@ elif st.session_state.page == 'edit_task':
                     with st.spinner("Updating records..."):
                         target_master_idx = st.session_state.editing_task_idx
                         
-                        # Apply static rule overwrites upon final confirmation
                         final_completion = edit_completion
                         if edit_status == "Done": final_completion = 100
                         elif edit_status == "To Do": final_completion = 0
@@ -379,7 +350,6 @@ elif st.session_state.page == 'edit_task':
                         
                         if 'editing_task_data' in st.session_state: del st.session_state.editing_task_data
                         if 'editing_task_idx' in st.session_state: del st.session_state.editing_task_idx
-                        if 'edit_completion_tracker' in st.session_state: del st.session_state.edit_completion_tracker
                         
                         st.toast("🚀 Task updated successfully!")
                         time.sleep(0.5)
@@ -390,7 +360,6 @@ elif st.session_state.page == 'edit_task':
             if cancel_btn:
                 if 'editing_task_data' in st.session_state: del st.session_state.editing_task_data
                 if 'editing_task_idx' in st.session_state: del st.session_state.editing_task_idx
-                if 'edit_completion_tracker' in st.session_state: del st.session_state.edit_completion_tracker
                 navigate_to('list')
                 
             if delete_btn:
@@ -405,7 +374,6 @@ elif st.session_state.page == 'list':
     st.session_state.df = raw_df
 
     display_df = st.session_state.df.copy()
-
     col_search, col_edit, col_bulk_del, col_add = st.columns([2.5, 1, 1, 1])
 
     with col_search:
