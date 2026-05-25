@@ -1,3 +1,5 @@
 venv/
 .streamlit/
 __pycache__/
+service_account.json
+service_account.json

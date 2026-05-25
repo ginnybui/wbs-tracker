@@ -1,5 +1,11 @@
 streamlit
+<<<<<<< HEAD
 gspread
 google-auth
 pandas
 oauth2client
+=======
+pandas
+gspread
+oauth2client
+>>>>>>> dev
