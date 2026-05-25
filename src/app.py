@@ -21,7 +21,7 @@ st.markdown(
     .main .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
     .stDataFrame [data-testid="stElementToolbarvanishing"],
     .stDataFrame [data-testid="stElementToolbar"],
-    [data-testid="stDataFrameToolbar"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+    [data-testid="stDataFrameToolbar"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; pointer-events: none !important; }
     .custom-pagination-bar { margin-top: 14px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; padding: 10px 4px !important; width: 100% !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     .custom-pagination-bar .total-records { font-size: 14px !important; color: var(--text-color, #31333F) !important; opacity: 0.8; font-weight: 500 !important; user-select: none; }
     .custom-pagination-bar .button-group { display: flex !important; align-items: center !important; gap: 6px !important; }
@@ -71,21 +71,18 @@ def get_spreadsheet():
     spreadsheet_key = spreadsheet_key_match.group(1)
     opened_spreadsheet = client.open_by_key(spreadsheet_key)
     
-    gid_match = re.search(r"gid=(\d+)", target_url)
-    if gid_match:
-        target_gid = gid_match.group(1)
-        for sheet in opened_spreadsheet.worksheets():
-            if str(sheet.id) == target_gid:
-                return sheet
-                
-    sheet_name = os.getenv("GSHEET_NAME", st.secrets["gsheets"].get("sheet_name", ""))
-    if sheet_name:
-        try:
-            return opened_spreadsheet.worksheet(sheet_name)
-        except gspread.exceptions.WorksheetNotFound:
-            pass
-            
-    return opened_spreadsheet.get_worksheet(0)
+    # 🛠️ CHỈ CHỈNH SỬA TẠI ĐÂY: Trỏ trực tiếp và cố định vào tab Data_UAT cho môi trường UAT hoàn chỉnh
+    try:
+        return opened_spreadsheet.worksheet("Data_UAT")
+    except gspread.exceptions.WorksheetNotFound:
+        # Cơ chế fallback phòng hờ nếu tên tab có sự cố, hệ thống sẽ quét theo GID hoặc tab đầu tiên như cũ
+        gid_match = re.search(r"gid=(\d+)", target_url)
+        if gid_match:
+            target_gid = gid_match.group(1)
+            for sheet in opened_spreadsheet.worksheets():
+                if str(sheet.id) == target_gid:
+                    return sheet
+        return opened_spreadsheet.get_worksheet(0)
 
 try:
     worksheet = get_spreadsheet()
