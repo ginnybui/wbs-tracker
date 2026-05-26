@@ -1,14 +1,3 @@
----
-title: WBS Tracker Pro
-emoji: 📂
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: 1.35.0
-app_file: src/app.py
-pinned: false
----
-
 # 📂 WBS Tracker Pro
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
