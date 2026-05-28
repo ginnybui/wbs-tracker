@@ -8,60 +8,68 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Premium UI container optimization: Force every single wrapper in the hierarchy to be edge-to-edge
-# Using st.html to bypass any markdown containment sandboxing and apply globally
+# Premium UI container optimization: Absolute authority CSS styling
+# Using st.html to apply these global rules directly to the DOM head/body
 st.html(
     """
     <style>
-    /* Reset everything to be borderless and marginless */
+    /* Reset everything globally to prevent default margins/paddings */
     * {
         margin: 0 !important;
         padding: 0 !important;
         box-sizing: border-box !important;
     }
     
-    /* Completely strip and hide all default Streamlit branding & components */
-    header[data-testid="stHeader"] { display: none !important; visibility: hidden !important; }
-    footer { display: none !important; visibility: hidden !important; }
-    [data-testid="stDecoration"] { display: none !important; visibility: hidden !important; }
-    [data-testid="stSidebar"] { display: none !important; visibility: hidden !important; }
-    
-    /* Target all parent containers in Streamlit's tree and force absolute full screen */
-    html, body, #root, .stApp, 
-    [data-testid="stAppViewContainer"], 
-    [data-testid="stAppViewBlockContainer"],
-    div[class*="stMainBlockContainer"],
-    div[class*="BlockContainer"],
-    div[class*="block-container"],
-    .stMainBlockContainer,
-    .block-container,
-    .main, 
-    .element-container, 
-    [data-testid="stHtml"],
-    iframe {
+    /* Force HTML, body, and React root to take up full viewport and match premium dark background */
+    html, body, #root {
         width: 100vw !important;
-        max-width: 100vw !important;
         height: 100vh !important;
-        min-height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
-        border: none !important;
         overflow: hidden !important;
-        background-color: #0b0f19 !important; /* Premium dark mode matching WBS */
+        background-color: #0b0f19 !important;
+    }
+    
+    /* Style every descendant div, section, and main inside .stApp to be full width/height with no padding/margins */
+    .stApp,
+    .stApp div, 
+    .stApp section,
+    .stApp main {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        background-color: transparent !important;
         transform: none !important;
         filter: none !important;
         perspective: none !important;
     }
 
-    /* Force the inner iframe specifically to take up the full viewport */
+    /* Force the iframe to be fixed full-screen, filling the exact viewport */
     iframe {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
         z-index: 999999 !important;
     }
+    
+    /* Hide streamlit specific UI elements completely */
+    header[data-testid="stHeader"] { display: none !important; visibility: hidden !important; }
+    footer { display: none !important; visibility: hidden !important; }
+    [data-testid="stDecoration"] { display: none !important; visibility: hidden !important; }
+    [data-testid="stSidebar"] { display: none !important; visibility: hidden !important; }
     </style>
     """
 )
