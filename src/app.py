@@ -8,10 +8,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Premium UI container optimization: Force every single wrapper to be edge-to-edge full-screen
+# Premium UI container optimization: Force every single wrapper in the hierarchy to be edge-to-edge
 st.markdown(
     """
     <style>
+    /* Reset everything to be borderless and marginless */
+    * {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
     /* Completely strip and hide all default Streamlit branding & components */
     header[data-testid="stHeader"] { display: none !important; visibility: hidden !important; }
     footer { display: none !important; visibility: hidden !important; }
@@ -21,25 +28,28 @@ st.markdown(
     /* Target all parent containers in Streamlit's tree and force absolute full screen */
     html, body, #root, .stApp, 
     [data-testid="stAppViewContainer"], 
-    [data-testid="stAppViewBlockContainer"], 
+    [data-testid="stAppViewBlockContainer"],
+    div[class*="stMainBlockContainer"],
+    div[class*="BlockContainer"],
+    div[class*="block-container"],
+    .stMainBlockContainer,
+    .block-container,
     .main, 
-    .main .block-container, 
     .element-container, 
     [data-testid="stHtml"],
     iframe {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
         height: 100vh !important;
         min-height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
         border: none !important;
         overflow: hidden !important;
-        box-sizing: border-box !important;
+        background-color: #0b0f19 !important; /* Premium dark mode matching WBS */
         transform: none !important;
         filter: none !important;
         perspective: none !important;
-        background-color: #0b0f19 !important; /* Matches our premium dark theme */
     }
 
     /* Force the inner iframe specifically to take up the full viewport */
@@ -47,8 +57,6 @@ st.markdown(
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
         z-index: 999999 !important;
     }
     </style>
