@@ -8,9 +8,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Premium UI container optimization: Absolute authority CSS styling
-# Using st.html to apply these global rules directly to the DOM head/body
-st.html(
+# Premium UI container optimization: Force every single wrapper in the hierarchy to be edge-to-edge
+# Using st.markdown with unsafe_allow_html=True to bypass sanitization and guarantee CSS injection
+st.markdown(
     """
     <style>
     /* Reset everything globally to prevent default margins/paddings */
@@ -71,7 +71,8 @@ st.html(
     [data-testid="stDecoration"] { display: none !important; visibility: hidden !important; }
     [data-testid="stSidebar"] { display: none !important; visibility: hidden !important; }
     </style>
-    """
+    """,
+    unsafe_allow_html=True
 )
 
 # Resolve file path dynamically
