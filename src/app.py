@@ -8,49 +8,48 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Premium UI container optimization: Completely strip margins, paddings and force full screen
+# Premium UI container optimization: Force every single wrapper to be edge-to-edge full-screen
 st.markdown(
     """
     <style>
-    /* Strip default Streamlit headers, footers and decorators */
+    /* Completely strip and hide all default Streamlit branding & components */
     header[data-testid="stHeader"] { display: none !important; visibility: hidden !important; }
     footer { display: none !important; visibility: hidden !important; }
     [data-testid="stDecoration"] { display: none !important; visibility: hidden !important; }
     [data-testid="stSidebar"] { display: none !important; visibility: hidden !important; }
     
-    /* Force the iframe rendering component to be a fixed full-screen cover */
+    /* Target all parent containers in Streamlit's tree and force absolute full screen */
+    html, body, #root, .stApp, 
+    [data-testid="stAppViewContainer"], 
+    [data-testid="stAppViewBlockContainer"], 
+    .main, 
+    .main .block-container, 
+    .element-container, 
+    [data-testid="stHtml"],
+    iframe {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        transform: none !important;
+        filter: none !important;
+        perspective: none !important;
+        background-color: #0b0f19 !important; /* Matches our premium dark theme */
+    }
+
+    /* Force the inner iframe specifically to take up the full viewport */
     iframe {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        border: none !important;
         z-index: 999999 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }
-    
-    /* Strip any margin, padding or scrolling from parent Streamlit containers */
-    .main .block-container {
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        height: 100vh !important;
-    }
-    
-    html, body, [data-testid="stAppViewContainer"] {
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        background-color: #0b0f19 !important; /* Premium dark mode match */
-    }
-    
-    /* Remove any scrolling on parent container to keep it strictly native */
-    .stApp {
-        overflow: hidden !important;
     }
     </style>
     """,
