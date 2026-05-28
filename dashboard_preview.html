@@ -132,7 +132,7 @@
                 <section
                     class="theme-transition bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md overflow-hidden">
                     <div
-                        class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-[#161F30] min-h-[64px]">
+                        class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col xl:flex-row justify-between items-start xl:items-center bg-slate-50 dark:bg-[#161F30] gap-4 min-h-[64px]">
                         <div id="tableHeaderContextArea" class="flex items-center gap-3">
                             <div>
                                 <h2 id="tableNormalTitle"
@@ -152,16 +152,43 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <div class="relative w-64">
-                                <input type="text" id="taskSearchInput" oninput="filterTasks(this.value)"
-                                    placeholder="Search tasks by title, ID or status..."
-                                    class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs px-3 py-1.5 rounded-lg shadow-sm focus:outline-none focus:border-cyan-500 pl-8 font-medium">
+                        
+                        <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-start xl:justify-end">
+                            <div class="relative">
+                                <select id="filterPlatform" onchange="applyAllFilters()" class="theme-transition bg-white dark:bg-slate-800 text-[11px] text-slate-800 dark:text-slate-200 pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer font-medium shadow-sm">
+                                    <option value="all">🌐 All Platforms</option>
+                                    <option value="Web">Web</option>
+                                    <option value="CMS">CMS</option>
+                                    <option value="iOS">iOS</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400 text-[9px]">▼</div>
+                            </div>
+
+                            <div class="relative">
+                                <select id="filterStatus" onchange="applyAllFilters()" class="theme-transition bg-white dark:bg-slate-800 text-[11px] text-slate-800 dark:text-slate-200 pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer font-medium shadow-sm">
+                                    <option value="all">📊 All Statuses</option>
+                                    <option value="TODO">TODO</option>
+                                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                    <option value="DONE">DONE</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400 text-[9px]">▼</div>
+                            </div>
+
+                            <div class="relative">
+                                <select id="filterHealth" onchange="applyAllFilters()" class="theme-transition bg-white dark:bg-slate-800 text-[11px] text-slate-800 dark:text-slate-200 pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer font-medium shadow-sm">
+                                    <option value="all">🩺 All Health</option>
+                                    <option value="🟢">🟢 Efficient</option>
+                                    <option value="🔴">🔴 Overtime</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400 text-[9px]">▼</div>
+                            </div>
+
+                            <div class="relative w-full sm:w-48 xl:w-64">
+                                <input type="text" id="taskSearchInput" oninput="applyAllFilters()" placeholder="Search tasks by title, ID or status..." class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs px-3 py-1.5 rounded-lg shadow-sm focus:outline-none focus:border-cyan-500 pl-8 font-medium">
                                 <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
                             </div>
-                            <button onclick="openSidePanel('task-create')"
-                                class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-semibold text-xs px-3 py-2 rounded-lg cursor-pointer shadow-sm">+
-                                Add New Task</button>
+
+                            <button onclick="openSidePanel('task-create')" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-semibold text-xs px-3 py-2 rounded-lg cursor-pointer shadow-sm whitespace-nowrap">+ Add New Task</button>
                         </div>
                     </div>
 
@@ -180,59 +207,59 @@
                                 </tr>
                             </thead>
                             <tbody id="wbsTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-gray-300">
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-001', 'Design Bento UI Layout & Framework Integration', 'Web', '2026-05-01', '2026-05-15', 20, 18, 90, 'IN_PROGRESS', 'On track, core framework elements integrated smoothly.')">
+                                <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-001', 'Design Bento UI Layout & Framework Integration', 'Web', '2026-05-01', '2026-05-15', 20, 18, 90, 'IN_PROGRESS', 'On track, core framework elements integrated smoothly.')">
                                     <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="#TSK-001" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                                    <td class="p-4 font-mono text-cyan-600 font-semibold">#TSK-001</td>
-                                    <td class="p-4 font-medium text-slate-900 dark:text-white">Design Bento UI Layout & Framework Integration</td>
-                                    <td class="p-4"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
+                                    <td class="p-4 font-mono text-cyan-600 font-semibold data-id">#TSK-001</td>
+                                    <td class="p-4 font-medium text-slate-900 dark:text-white data-title">Design Bento UI Layout & Framework Integration</td>
+                                    <td class="p-4 data-platform"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
                                     <td class="p-4 font-mono text-center">20</td>
-                                    <td class="p-4 font-mono text-center">18 <span class="text-[10px] ml-1">🟢</span></td>
+                                    <td class="p-4 font-mono text-center data-health">18 <span class="text-[10px] ml-1">🟢</span></td>
                                     <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">90%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="bg-emerald-500 h-1.5 rounded-full" style="width: 90%"></div></div></div></td>
-                                    <td class="p-4"><span class="bg-amber-400/10 text-amber-600 text-[11px] px-2 py-1 rounded font-medium">IN_PROGRESS</span></td>
+                                    <td class="p-4 data-status"><span class="bg-amber-400/10 text-amber-600 text-[11px] px-2 py-1 rounded font-medium">IN_PROGRESS</span></td>
                                 </tr>
 
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-002', 'Configure RBAC Access Validation Layers', 'CMS', '2026-05-05', '2026-05-12', 15, 15, 100, 'DONE', 'Completed exactly within target metrics constraints.')">
+                                <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-002', 'Configure RBAC Access Validation Layers', 'CMS', '2026-05-05', '2026-05-12', 15, 15, 100, 'DONE', 'Completed exactly within target metrics constraints.')">
                                     <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="#TSK-002" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                                    <td class="p-4 font-mono text-cyan-600 font-semibold">#TSK-002</td>
-                                    <td class="p-4 font-medium text-slate-900 dark:text-white">Configure RBAC Access Validation Layers</td>
-                                    <td class="p-4"><span class="bg-purple-500/10 text-purple-600 text-[10px] px-2 py-0.5 rounded font-medium">CMS</span></td>
+                                    <td class="p-4 font-mono text-cyan-600 font-semibold data-id">#TSK-002</td>
+                                    <td class="p-4 font-medium text-slate-900 dark:text-white data-title">Configure RBAC Access Validation Layers</td>
+                                    <td class="p-4 data-platform"><span class="bg-purple-500/10 text-purple-600 text-[10px] px-2 py-0.5 rounded font-medium">CMS</span></td>
                                     <td class="p-4 font-mono text-center">15</td>
-                                    <td class="p-4 font-mono text-center">15 <span class="text-[10px] ml-1">🟢</span></td>
+                                    <td class="p-4 font-mono text-center data-health">15 <span class="text-[10px] ml-1">🟢</span></td>
                                     <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">100%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="bg-emerald-500 h-1.5 rounded-full" style="width: 100%"></div></div></div></td>
-                                    <td class="p-4"><span class="bg-emerald-500/10 text-emerald-600 text-[11px] px-2 py-1 rounded font-medium">DONE</span></td>
+                                    <td class="p-4 data-status"><span class="bg-emerald-500/10 text-emerald-600 text-[11px] px-2 py-1 rounded font-medium">DONE</span></td>
                                 </tr>
 
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-003', 'Integrate Dynamic Local CSV Parsing Engine', 'Web', '2026-05-10', '2026-05-25', 30, 35, 40, 'IN_PROGRESS', 'Partner API schema changed unexpectedly, requiring substantial refactoring logic.')">
+                                <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-003', 'Integrate Dynamic Local CSV Parsing Engine', 'Web', '2026-05-10', '2026-05-25', 30, 35, 40, 'IN_PROGRESS', 'Partner API schema changed unexpectedly, requiring substantial refactoring logic.')">
                                     <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="#TSK-003" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                                    <td class="p-4 font-mono text-cyan-600 font-semibold">#TSK-003</td>
-                                    <td class="p-4 font-medium text-slate-900 dark:text-white">Integrate Dynamic Local CSV Parsing Engine</td>
-                                    <td class="p-4"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
+                                    <td class="p-4 font-mono text-cyan-600 font-semibold data-id">#TSK-003</td>
+                                    <td class="p-4 font-medium text-slate-900 dark:text-white data-title">Integrate Dynamic Local CSV Parsing Engine</td>
+                                    <td class="p-4 data-platform"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
                                     <td class="p-4 font-mono text-center">30</td>
-                                    <td class="p-4 font-mono text-center">35 <span class="text-[10px] ml-1">🔴</span></td>
+                                    <td class="p-4 font-mono text-center data-health">35 <span class="text-[10px] ml-1">🔴</span></td>
                                     <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">40%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="bg-amber-500 h-1.5 rounded-full" style="width: 40%"></div></div></div></td>
-                                    <td class="p-4"><span class="bg-amber-400/10 text-amber-600 text-[11px] px-2 py-1 rounded font-medium">IN_PROGRESS</span></td>
+                                    <td class="p-4 data-status"><span class="bg-amber-400/10 text-amber-600 text-[11px] px-2 py-1 rounded font-medium">IN_PROGRESS</span></td>
                                 </tr>
 
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-004', 'Construct Light/Dark Mode Palette Framework', 'Web', '2026-05-01', '2026-05-05', 10, 10, 100, 'DONE', 'Successfully verified framework variables.')">
+                                <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-004', 'Construct Light/Dark Mode Palette Framework', 'Web', '2026-05-01', '2026-05-05', 10, 10, 100, 'DONE', 'Successfully verified framework variables.')">
                                     <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="#TSK-004" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                                    <td class="p-4 font-mono text-cyan-600 font-semibold">#TSK-004</td>
-                                    <td class="p-4 font-medium text-slate-900 dark:text-white">Construct Light/Dark Mode Palette Framework</td>
-                                    <td class="p-4"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
+                                    <td class="p-4 font-mono text-cyan-600 font-semibold data-id">#TSK-004</td>
+                                    <td class="p-4 font-medium text-slate-900 dark:text-white data-title">Construct Light/Dark Mode Palette Framework</td>
+                                    <td class="p-4 data-platform"><span class="bg-blue-500/10 text-blue-600 text-[10px] px-2 py-0.5 rounded font-medium">Web</span></td>
                                     <td class="p-4 font-mono text-center">10</td>
-                                    <td class="p-4 font-mono text-center">10 <span class="text-[10px] ml-1">🟢</span></td>
+                                    <td class="p-4 font-mono text-center data-health">10 <span class="text-[10px] ml-1">🟢</span></td>
                                     <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">100%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="bg-emerald-500 h-1.5 rounded-full" style="width: 100%"></div></div></div></td>
-                                    <td class="p-4"><span class="bg-emerald-500/10 text-emerald-600 text-[11px] px-2 py-1 rounded font-medium">DONE</span></td>
+                                    <td class="p-4 data-status"><span class="bg-emerald-500/10 text-emerald-600 text-[11px] px-2 py-1 rounded font-medium">DONE</span></td>
                                 </tr>
 
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-005', 'Establish Real-Time Top-Center Toast Interactions', 'iOS', '2026-05-20', '2026-06-01', 25, 0, 0, 'TODO', '')">
+                                <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '#TSK-005', 'Establish Real-Time Top-Center Toast Interactions', 'iOS', '2026-05-20', '2026-06-01', 25, 0, 0, 'TODO', '')">
                                     <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="#TSK-005" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                                    <td class="p-4 font-mono text-cyan-600 font-semibold">#TSK-005</td>
-                                    <td class="p-4 font-medium text-slate-900 dark:text-white">Establish Real-Time Top-Center Toast Interactions</td>
-                                    <td class="p-4"><span class="bg-emerald-500/10 text-emerald-600 text-[10px] px-2 py-0.5 rounded font-medium">iOS</span></td>
+                                    <td class="p-4 font-mono text-cyan-600 font-semibold data-id">#TSK-005</td>
+                                    <td class="p-4 font-medium text-slate-900 dark:text-white data-title">Establish Real-Time Top-Center Toast Interactions</td>
+                                    <td class="p-4 data-platform"><span class="bg-emerald-500/10 text-emerald-600 text-[10px] px-2 py-0.5 rounded font-medium">iOS</span></td>
                                     <td class="p-4 font-mono text-center">25</td>
-                                    <td class="p-4 font-mono text-center">0 <span class="text-[10px] ml-1">🟢</span></td>
+                                    <td class="p-4 font-mono text-center data-health">0 <span class="text-[10px] ml-1">🟢</span></td>
                                     <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">0%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="bg-slate-300 dark:bg-slate-600 h-1.5 rounded-full" style="width: 0%"></div></div></div></td>
-                                    <td class="p-4"><span class="bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-600 font-medium">TODO</span></td>
+                                    <td class="p-4 data-status"><span class="bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-600 font-medium">TODO</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1059,6 +1086,12 @@
             if (searchInput) {
                 searchInput.value = '';
             }
+            const filterPlat = document.getElementById('filterPlatform');
+            if (filterPlat) filterPlat.value = 'all';
+            const filterStat = document.getElementById('filterStatus');
+            if (filterStat) filterStat.value = 'all';
+            const filterHeal = document.getElementById('filterHealth');
+            if (filterHeal) filterHeal.value = 'all';
 
             const dash = document.getElementById('workspaceDashboardScreen');
             const PM = document.getElementById('projectManagementScreen');
@@ -1093,15 +1126,15 @@
                 const explanationTextEscaped = (t.explanationText || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 
                 tbodyHtml += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '${t.id}', '${titleEscaped}', '${t.platform}', '${t.startDate || ''}', '${t.endDate || ''}', ${t.est}, ${t.act}, ${t.progress}, '${t.status}', '${explanationTextEscaped}')">
+                    <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '${t.id}', '${titleEscaped}', '${t.platform}', '${t.startDate || ''}', '${t.endDate || ''}', ${t.est}, ${t.act}, ${t.progress}, '${t.status}', '${explanationTextEscaped}')">
                         <td class="p-4 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="${t.id}" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
-                        <td class="p-4 font-mono text-cyan-600 text-xs font-semibold">${t.id}</td>
-                        <td class="p-4 font-medium text-slate-900 dark:text-white">${t.title}</td>
-                        <td class="p-4"><span class="${platformBadgeColor} text-[10px] px-2 py-0.5 rounded font-medium">${t.platform}</span></td>
+                        <td class="p-4 font-mono text-cyan-600 text-xs font-semibold data-id">${t.id}</td>
+                        <td class="p-4 font-medium text-slate-900 dark:text-white data-title">${t.title}</td>
+                        <td class="p-4 data-platform"><span class="${platformBadgeColor} text-[10px] px-2 py-0.5 rounded font-medium">${t.platform}</span></td>
                         <td class="p-4 font-mono text-center">${t.est}</td>
-                        <td class="p-4 font-mono text-center">${t.act} <span class="text-[10px] ml-1">${t.act > t.est ? '🔴' : '🟢'}</span></td>
+                        <td class="p-4 font-mono text-center data-health">${t.act} <span class="text-[10px] ml-1">${t.act > t.est ? '🔴' : '🟢'}</span></td>
                         <td class="p-4"><div class="flex items-center gap-2"><span class="w-8 text-[11px]">${t.progress}%</span><div class="w-16 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full"><div class="${progColor} h-1.5 rounded-full" style="width: ${t.progress}%"></div></div></div></td>
-                        <td class="p-4"><span class="${badgeColor} text-[10px] px-2 py-1 rounded font-medium">${t.status}</span></td>
+                        <td class="p-4 data-status"><span class="${badgeColor} text-[10px] px-2 py-1 rounded font-medium">${t.status}</span></td>
                     </tr>
                 `;
             });
@@ -1117,6 +1150,8 @@
             if (totalSpan) {
                 totalSpan.innerText = totalTasks;
             }
+
+            applyAllFilters();
 
             triggerToast('success', `Loaded workspace data segment for ${data.name}`);
         }
@@ -1521,39 +1556,52 @@
             }
         }
 
-        // DYNAMIC FRONTEND FILTERING SYSTEM FOR WBS TASKS
-        function filterTasks(query) {
-            const cleanQuery = query.toLowerCase().trim();
+        // CHƯƠNG TRÌNH LỌC DỮ LIỆU ĐA THAM SỐ (MỚI THÊM)
+        function applyAllFilters() {
+            const platformQuery = document.getElementById('filterPlatform').value;
+            const statusQuery = document.getElementById('filterStatus').value;
+            const healthQuery = document.getElementById('filterHealth').value;
+            const searchQuery = document.getElementById('taskSearchInput').value.toLowerCase().trim();
+            
             const tbody = document.getElementById('wbsTableBody');
-            const rows = tbody.getElementsByTagName('tr');
-            let visibleCount = 0;
-
+            const rows = tbody.querySelectorAll('.wbs-data-row');
+            
+            // Remove existing noResults row if any
             const existingNoResults = document.getElementById('noTasksRow');
             if (existingNoResults) {
                 existingNoResults.remove();
             }
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                if (row.id === 'noTasksRow') continue;
-
-                const text = row.innerText.toLowerCase();
-
-                if (text.includes(cleanQuery)) {
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const rowId = row.querySelector('.data-id').innerText.toLowerCase();
+                const rowTitle = row.querySelector('.data-title').innerText.toLowerCase();
+                const rowPlatform = row.querySelector('.data-platform').innerText.trim();
+                const rowStatus = row.querySelector('.data-status').innerText.trim();
+                const rowHealthText = row.querySelector('.data-health').innerText; 
+                
+                const matchesPlatform = (platformQuery === 'all' || rowPlatform === platformQuery);
+                const matchesStatus = (statusQuery === 'all' || rowStatus === statusQuery);
+                const matchesHealth = (healthQuery === 'all' || rowHealthText.includes(healthQuery));
+                const matchesSearch = (rowId.includes(searchQuery) || rowTitle.includes(searchQuery) || rowStatus.toLowerCase().includes(searchQuery));
+                
+                if (matchesPlatform && matchesStatus && matchesHealth && matchesSearch) {
                     row.classList.remove('hidden');
                     visibleCount++;
                 } else {
                     row.classList.add('hidden');
                 }
-            }
+            });
 
+            // Footer updates
             const showingSpan = document.getElementById('tasksShowingCount');
             if (showingSpan) {
                 showingSpan.innerText = visibleCount === 0 ? "0" : `1-${visibleCount}`;
             }
             const totalSpan = document.getElementById('tasksTotalCount');
             if (totalSpan) {
-                totalSpan.innerText = visibleCount;
+                totalSpan.innerText = rows.length;
             }
 
             if (visibleCount === 0) {
@@ -1564,7 +1612,7 @@
                         <div class="flex flex-col items-center justify-center">
                             <span class="text-3xl mb-2">🔍</span>
                             <h4 class="text-sm font-bold text-slate-800 dark:text-white">No tasks found</h4>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">We couldn't find any tasks matching your search. Try searching for other specifications.</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">We couldn't find any tasks matching your filters. Try adjusting your selections.</p>
                         </div>
                     </td>
                 `;
