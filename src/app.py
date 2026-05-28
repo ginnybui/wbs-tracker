@@ -9,7 +9,8 @@ st.set_page_config(
 )
 
 # Premium UI container optimization: Force every single wrapper in the hierarchy to be edge-to-edge
-st.markdown(
+# Using st.html to bypass any markdown containment sandboxing and apply globally
+st.html(
     """
     <style>
     /* Reset everything to be borderless and marginless */
@@ -57,11 +58,12 @@ st.markdown(
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
         z-index: 999999 !important;
     }
     </style>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 # Resolve file path dynamically
