@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
 import time
 import math
 import os
@@ -60,7 +60,7 @@ def get_spreadsheet():
         except Exception as encode_error:
             raise ValueError(f"Failed to parse base64 private key: {encode_error}")
     
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(gcp_config, scope)
+    creds = service_account.Credentials.from_service_account_info(gcp_config, scopes=scope)
     client = gspread.authorize(creds)
     
     target_url = st.secrets["gsheets"]["spreadsheet_url"]
