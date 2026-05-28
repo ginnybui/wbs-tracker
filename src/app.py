@@ -16,8 +16,23 @@ st.markdown(
     header[data-testid="stHeader"] { display: none !important; visibility: hidden !important; }
     footer { display: none !important; visibility: hidden !important; }
     [data-testid="stDecoration"] { display: none !important; visibility: hidden !important; }
+    [data-testid="stSidebar"] { display: none !important; visibility: hidden !important; }
     
-    /* Force main layout block to take 100% width and height without margins */
+    /* Force the iframe rendering component to be a fixed full-screen cover */
+    iframe {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        border: none !important;
+        z-index: 999999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    /* Strip any margin, padding or scrolling from parent Streamlit containers */
     .main .block-container {
         padding: 0 !important;
         margin: 0 !important;
@@ -26,20 +41,11 @@ st.markdown(
         height: 100vh !important;
     }
     
-    iframe {
-        width: 100vw !important;
-        height: 100vh !important;
-        border: none !important;
+    html, body, [data-testid="stAppViewContainer"] {
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
-    }
-    
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        background-color: #0b0f19 !important; /* Dark mode match */
+        background-color: #0b0f19 !important; /* Premium dark mode match */
     }
     
     /* Remove any scrolling on parent container to keep it strictly native */
