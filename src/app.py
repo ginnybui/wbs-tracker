@@ -38,27 +38,31 @@ st.markdown(
 def get_spreadsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
-    # 🌟 AUTO-PADDING BASE64 ENGINE: Tự động tính toán phục hồi các ký tự thiếu hụt khi dán vào Streamlit Cloud Secrets
+    # 🌟 DYNAMIC PRIVATE KEY PARSER: Tự động nhận diện và xử lý cả khóa PEM thô (Raw PEM) lẫn khóa mã hóa Base64
     gcp_config = dict(st.secrets["gcp"])
     if "private_key" in gcp_config:
         try:
-            b64_str = gcp_config["private_key"].strip()
+            private_key_val = gcp_config["private_key"].strip()
             
-            # Khắc phục lỗi hụt ký tự (1621 ký tự thay vì 1624 ký tự) bằng toán tử Modulo % 4
-            missing_padding = len(b64_str) % 4
-            if missing_padding:
-                b64_str += '=' * (4 - missing_padding)
+            # Nếu khóa đã ở dạng PEM thô (bắt đầu bằng -----BEGIN)
+            if private_key_val.startswith("-----BEGIN"):
+                # Thay thế các ký tự xuống dòng bị double-escape nếu có
+                gcp_config["private_key"] = private_key_val.replace("\\n", "\n")
+            else:
+                # Nếu ở dạng Base64, tiến hành tự động bù padding và giải mã
+                b64_str = private_key_val
+                missing_padding = len(b64_str) % 4
+                if missing_padding:
+                    b64_str += '=' * (4 - missing_padding)
+                    
+                decoded_bytes = base64.b64decode(b64_str)
+                raw_private_key = decoded_bytes.decode("utf-8")
                 
-            # Tiến hành giải mã chuỗi Base64 siêu an toàn
-            decoded_bytes = base64.b64decode(b64_str)
-            raw_private_key = decoded_bytes.decode("utf-8")
-            
-            if "BEGIN PRIVATE KEY" not in raw_private_key:
-                raw_private_key = f"-----BEGIN PRIVATE KEY-----\n{raw_private_key}\n-----END PRIVATE KEY-----"
-                
-            gcp_config["private_key"] = raw_private_key
+                if "BEGIN PRIVATE KEY" not in raw_private_key:
+                    raw_private_key = f"-----BEGIN PRIVATE KEY-----\n{raw_private_key}\n-----END PRIVATE KEY-----"
+                gcp_config["private_key"] = raw_private_key
         except Exception as encode_error:
-            raise ValueError(f"Failed to parse base64 private key: {encode_error}")
+            raise ValueError(f"Failed to parse private key: {encode_error}")
     
     creds = service_account.Credentials.from_service_account_info(gcp_config, scopes=scope)
     client = gspread.authorize(creds)
