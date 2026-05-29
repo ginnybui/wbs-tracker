@@ -449,13 +449,23 @@
 
                         <div
                             class="py-1.5 px-2.5 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px]">
-                            <div class="text-slate-500 dark:text-slate-400 font-medium">Showing <span
-                                    id="tasksShowingCount"
-                                    class="text-slate-800 dark:text-slate-200 font-semibold">1-5</span> of <span
-                                    id="tasksTotalCount"
-                                    class="text-slate-800 dark:text-slate-200 font-semibold">12</span>
-                                tasks</div>
-                            <div class="flex items-center gap-1">
+                            <div class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5 flex-wrap">
+                                <span>Showing</span>
+                                <span id="tasksShowingCount" class="text-slate-800 dark:text-slate-200 font-semibold">1-5</span>
+                                <span>of</span>
+                                <span id="tasksTotalCount" class="text-slate-800 dark:text-slate-200 font-semibold">12</span>
+                                <span>tasks</span>
+                                <span class="mx-1 text-slate-300 dark:text-slate-600">|</span>
+                                <span>Show</span>
+                                <select id="wbsPageSizeSelect" onchange="changeWbsPageSize(this.value)" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 text-[9px] xl:text-[10px] px-1 py-0.5 font-semibold cursor-pointer shadow-sm focus:outline-none theme-transition">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span>per page</span>
+                            </div>
+                            <div class="flex items-center gap-1" id="wbsPaginationContainer">
                                 <button onclick="triggerToast('success', 'Switched to previous task slice layer.')"
                                     class="theme-transition px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium cursor-pointer shadow-sm text-[9px] xl:text-[10px]">Prev</button>
                                 <button
@@ -1458,12 +1468,51 @@
         let currentPanelContextMode = null;
         let currentEditingId = null;
         let activeDeleteTargetMode = null;
+        let wbsCurrentPage = 1;
+        let wbsPageSize = 20;
 
         function toggleThemeMode() {
             const htmlNode = document.getElementById('themeHtml');
             const isDark = htmlNode.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             triggerToast('success', `Theme switched to ${isDark ? 'Dark' : 'Light'} Mode.`);
+        }
+
+        function renderPaginationButtons(visibleCount, totalPages) {
+            const paginationContainer = document.getElementById('wbsPaginationContainer');
+            if (!paginationContainer) return;
+
+            let html = '';
+            
+            // Prev button
+            const prevDisabled = wbsCurrentPage === 1 ? 'disabled pointer-events-none opacity-30' : '';
+            html += `<button onclick="changeWbsPage(${wbsCurrentPage - 1})" class="theme-transition px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium cursor-pointer shadow-sm text-[9px] xl:text-[10px] ${prevDisabled}">Prev</button>`;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === wbsCurrentPage) {
+                    html += `<button class="px-2 py-0.5 rounded bg-cyan-500 text-slate-900 font-bold shadow-sm cursor-pointer text-[9px] xl:text-[10px]">${i}</button>`;
+                } else {
+                    html += `<button onclick="changeWbsPage(${i})" class="theme-transition px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium cursor-pointer shadow-sm text-[9px] xl:text-[10px]">${i}</button>`;
+                }
+            }
+
+            // Next button
+            const nextDisabled = wbsCurrentPage === totalPages ? 'disabled pointer-events-none opacity-30' : '';
+            html += `<button onclick="changeWbsPage(${wbsCurrentPage + 1})" class="theme-transition px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium cursor-pointer shadow-sm text-[9px] xl:text-[10px] ${nextDisabled}">Next</button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changeWbsPage(page) {
+            wbsCurrentPage = page;
+            applyAllFilters();
+        }
+
+        function changeWbsPageSize(val) {
+            wbsPageSize = parseInt(val) || 10;
+            wbsCurrentPage = 1;
+            applyAllFilters();
         }
 
         const projectData = {
@@ -1566,10 +1615,95 @@
             }
         };
 
-        function selectProject(projId) {
+        async function selectProject(projId) {
             document.getElementById('projectSelector').value = projId;
+            wbsCurrentPage = 1;
+
+            const liveSyncedProjects = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'];
+            if (liveSyncedProjects.includes(projId)) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:8001/api/tasks?project=${projId}`);
+                    if (response.ok) {
+                        const liveTasks = await response.json();
+                        const statusMap = {
+                            'To Do': 'TODO',
+                            'In Progress': 'IN_PROGRESS',
+                            'Done': 'DONE',
+                            'On Hold': 'ON_HOLD'
+                        };
+                        projectData[projId].tasks = liveTasks.map(t => ({
+                            id: t.id,
+                            title: t.title,
+                            platform: t.platform || 'Web',
+                            startDate: t.startDate || '',
+                            endDate: t.endDate || '',
+                            est: Number(t.est) || 0,
+                            act: Number(t.act) || 0,
+                            progress: Number(t.progress) || 0,
+                            status: statusMap[t.status] || t.status,
+                            explanationText: '',
+                            description: t.description || ''
+                        }));
+
+                        // Dynamic calculation of indicators
+                        const totalTasks = projectData[projId].tasks.length;
+                        let avgProgress = 0;
+                        if (totalTasks > 0) {
+                            const sumProgress = projectData[projId].tasks.reduce((sum, t) => sum + t.progress, 0);
+                            avgProgress = Math.round(sumProgress / totalTasks);
+                        }
+                        projectData[projId].progress = avgProgress + '%';
+
+                        const sumEst = projectData[projId].tasks.reduce((sum, t) => sum + t.est, 0);
+                        const sumAct = projectData[projId].tasks.reduce((sum, t) => sum + t.act, 0);
+                        projectData[projId].estHours = sumEst + 'h';
+                        projectData[projId].actHours = sumAct + 'h';
+
+                        const platformGroups = {};
+                        projectData[projId].tasks.forEach(t => {
+                            const platName = t.platform || 'Web';
+                            if (!platformGroups[platName]) {
+                                platformGroups[platName] = { sum: 0, count: 0 };
+                            }
+                            platformGroups[platName].sum += t.progress;
+                            platformGroups[platName].count += 1;
+                        });
+
+                        const platformStatus = [];
+                        const colors = ['bg-cyan-500', 'bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-amber-500'];
+                        let colorIdx = 0;
+                        for (const name in platformGroups) {
+                            const group = platformGroups[name];
+                            const avgPlatProgress = Math.round(group.sum / group.count);
+                            platformStatus.push({
+                                name: name,
+                                progress: avgPlatProgress,
+                                color: colors[colorIdx % colors.length]
+                            });
+                            colorIdx++;
+                        }
+                        if (platformStatus.length === 0) {
+                            platformStatus.push({ name: 'iOS / Android App', progress: 0, color: 'bg-cyan-500' });
+                        }
+                        projectData[projId].platformStatus = platformStatus;
+                    }
+                } catch (err) {
+                    console.error('Failed to sync live tasks from Google Sheets:', err);
+                    triggerToast('error', 'Google Sheets connection offline. Using local backup.');
+                }
+            }
+
             const data = projectData[projId];
             if (!data) return;
+
+            // Sort tasks descending by ID (newest task on top)
+            if (data.tasks && data.tasks.length > 0) {
+                data.tasks.sort((a, b) => {
+                    const numA = parseInt(a.id.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(b.id.replace(/\D/g, '')) || 0;
+                    return numB - numA;
+                });
+            }
 
             const searchInput = document.getElementById('taskSearchInput');
             if (searchInput) {
@@ -1616,7 +1750,7 @@
                 const descEscaped = (t.description || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 
                 tbodyHtml += `
-                    <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" onclick="handleRowClick(event, '${t.id}', '${titleEscaped}', '${t.platform}', '${t.startDate || ''}', '${t.endDate || ''}', ${t.est}, ${t.act}, ${t.progress}, '${t.status}', '${explanationTextEscaped}', '${descEscaped}')">
+                    <tr class="wbs-data-row hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer" data-platform="${t.platform}" onclick="handleRowClick(event, '${t.id}', '${titleEscaped}', '${t.platform}', '${t.startDate || ''}', '${t.endDate || ''}', ${t.est}, ${t.act}, ${t.progress}, '${t.status}', '${explanationTextEscaped}', '${descEscaped}')">
                         <td class="py-0.5 px-2 xl:py-0.5 xl:px-2.5 text-center" onclick="event.stopPropagation()"><input type="checkbox" value="${t.id}" onchange="processCheckboxSelection()" class="task-checkbox rounded text-cyan-500 cursor-pointer"></td>
                         <td class="py-0.5 px-2 xl:py-0.5 xl:px-2.5 font-mono text-cyan-600 font-bold data-id text-[9px] xl:text-[10px]">${t.id}</td>
                         <td class="py-0.5 px-2 xl:py-0.5 xl:px-2.5 font-semibold text-slate-900 dark:text-white data-title text-[10px] xl:text-[11px] 2xl:text-[11.5px]">${t.title}</td>
@@ -1630,7 +1764,8 @@
             });
             tbody.innerHTML = tbodyHtml;
 
-            // Dynamically update the task entry counts in the table footer
+            applyAllFilters();
+
             const totalTasks = data.tasks.length;
             const showingSpan = document.getElementById('tasksShowingCount');
             if (showingSpan) {
@@ -1642,8 +1777,6 @@
             }
 
             applyAllFilters();
-
-            triggerToast('success', `Loaded workspace data segment for ${data.name}`);
         }
 
         function handleViewRouting(value) {
@@ -1901,7 +2034,7 @@
             }
         }
 
-        function saveTaskChanges() {
+        async function saveTaskChanges() {
             const projId = document.getElementById('projectSelector').value;
             const title = document.getElementById('panelInputTitle').value;
             const desc = document.getElementById('panelInputDescription').value;
@@ -1913,32 +2046,12 @@
             const explanation = document.getElementById('panelInputExplanation').value;
             const progress = Number(document.getElementById('panelInputProgress').value) || 0;
 
-            if (currentPanelContextMode === 'task-edit') {
-                const project = projectData[projId];
-                if (project) {
-                    const task = project.tasks.find(t => t.id === currentEditingId);
-                    if (task) {
-                        task.title = title;
-                        task.description = desc;
-                        task.platform = platform;
-                        task.startDate = startDate;
-                        task.endDate = endDate;
-                        task.est = est;
-                        task.act = act;
-                        task.explanationText = explanation;
-                        task.progress = progress;
-                        task.status = progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO');
-                    }
-                }
-                selectProject(projId);
-                triggerToast('success', 'Task row variables stored successfully.');
-            } else if (currentPanelContextMode === 'task-create') {
-                const project = projectData[projId];
-                if (project) {
-                    const nextNum = project.tasks.length + 1;
-                    const nextId = `#TSK-${projId === 'alpha' ? '' : (projId === 'beta' ? '2' : (projId === 'gamma' ? '3' : (projId === 'delta' ? '4' : (projId === 'epsilon' ? '5' : '6'))))}${String(nextNum).padStart(2, '0')}`;
-                    const newTask = {
-                        id: nextId,
+            const liveSyncedProjects = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'];
+            if (liveSyncedProjects.includes(projId)) {
+                if (currentPanelContextMode === 'task-edit') {
+                    const payload = {
+                        projectId: projId,
+                        id: currentEditingId,
                         title: title,
                         description: desc,
                         platform: platform,
@@ -1947,13 +2060,97 @@
                         est: est,
                         act: act,
                         progress: progress,
-                        status: progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO'),
-                        explanationText: explanation
+                        status: progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO')
                     };
-                    project.tasks.push(newTask);
+                    try {
+                        const response = await fetch('http://127.0.0.1:8001/api/tasks', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) {
+                            triggerToast('success', 'Task changes successfully synced to Google Sheets.');
+                        } else {
+                            triggerToast('error', 'Google Sheets update failed.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        triggerToast('error', 'API connection error.');
+                    }
+                    await selectProject(projId);
+                } else if (currentPanelContextMode === 'task-create') {
+                    const payload = {
+                        projectId: projId,
+                        title: title,
+                        description: desc,
+                        platform: platform,
+                        startDate: startDate,
+                        endDate: endDate,
+                        est: est,
+                        act: act,
+                        progress: progress,
+                        status: progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO')
+                    };
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8001/api/tasks?project=${projId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) {
+                            triggerToast('success', 'New task successfully created in Google Sheets.');
+                        } else {
+                            triggerToast('error', 'Google Sheets append failed.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        triggerToast('error', 'API connection error.');
+                    }
+                    await selectProject(projId);
                 }
-                selectProject(projId);
-                triggerToast('success', 'New task deployed successfully.');
+            } else {
+                if (currentPanelContextMode === 'task-edit') {
+                    const project = projectData[projId];
+                    if (project) {
+                        const task = project.tasks.find(t => t.id === currentEditingId);
+                        if (task) {
+                            task.title = title;
+                            task.description = desc;
+                            task.platform = platform;
+                            task.startDate = startDate;
+                            task.endDate = endDate;
+                            task.est = est;
+                            task.act = act;
+                            task.explanationText = explanation;
+                            task.progress = progress;
+                            task.status = progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO');
+                        }
+                    }
+                    selectProject(projId);
+                    triggerToast('success', 'Task row variables stored successfully.');
+                } else if (currentPanelContextMode === 'task-create') {
+                    const project = projectData[projId];
+                    if (project) {
+                        const nextNum = project.tasks.length + 1;
+                        const nextId = `#TSK-${projId === 'alpha' ? '' : (projId === 'beta' ? '2' : (projId === 'gamma' ? '3' : (projId === 'delta' ? '4' : (projId === 'epsilon' ? '5' : '6'))))}${String(nextNum).padStart(2, '0')}`;
+                        const newTask = {
+                            id: nextId,
+                            title: title,
+                            description: desc,
+                            platform: platform,
+                            startDate: startDate,
+                            endDate: endDate,
+                            est: est,
+                            act: act,
+                            progress: progress,
+                            status: progress === 100 ? 'DONE' : (progress > 0 ? 'IN_PROGRESS' : 'TODO'),
+                            explanationText: explanation
+                        };
+                        project.tasks.push(newTask);
+                    }
+                    selectProject(projId);
+                    triggerToast('success', 'New task deployed successfully.');
+                }
             }
             closeSidePanel();
         }
@@ -2013,34 +2210,78 @@
             document.getElementById('customDeleteModal').classList.add('hidden');
         }
 
-        function executeConfirmedDelete() {
+        async function executeConfirmedDelete() {
             closeDeleteModal();
             closeSidePanel();
 
             const projId = document.getElementById('projectSelector').value;
             const project = projectData[projId];
 
-            if (activeDeleteTargetMode === 'task-bulk') {
-                if (project) {
+            const liveSyncedProjects = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'];
+            if (liveSyncedProjects.includes(projId)) {
+                if (activeDeleteTargetMode === 'task-bulk') {
                     const checkboxedNodes = document.querySelectorAll('.task-checkbox:checked');
                     const idsToRemove = Array.from(checkboxedNodes).map(chk => chk.value);
-                    project.tasks = project.tasks.filter(t => !idsToRemove.includes(t.id));
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8001/api/tasks?id=${encodeURIComponent(idsToRemove.join(','))}&project=${projId}`, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            triggerToast('success', 'Selected WBS tasks were permanently purged from Google Sheets.');
+                        } else {
+                            triggerToast('error', 'Google Sheets bulk delete failed.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        triggerToast('error', 'API connection error.');
+                    }
+                    await selectProject(projId);
+                    clearAllSelections();
+                } else if (activeDeleteTargetMode === 'single-task') {
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8001/api/tasks?id=${encodeURIComponent(currentEditingId)}&project=${projId}`, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            triggerToast('success', `Task ID ${currentEditingId} deleted from Google Sheets.`);
+                        } else {
+                            triggerToast('error', 'Google Sheets delete failed.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        triggerToast('error', 'API connection error.');
+                    }
+                    await selectProject(projId);
+                } else if (activeDeleteTargetMode === 'project') {
+                    triggerToast('success', 'Project shifted to cold storage archive catalog.');
+                } else if (activeDeleteTargetMode === 'role') {
+                    triggerToast('success', 'Security role package purged successfully.');
+                } else if (activeDeleteTargetMode === 'user') {
+                    triggerToast('success', 'Identity access permissions revoked and member purged.');
                 }
-                selectProject(projId);
-                triggerToast('success', 'Selected WBS tasks were permanently purged.');
-                clearAllSelections();
-            } else if (activeDeleteTargetMode === 'single-task') {
-                if (project) {
-                    project.tasks = project.tasks.filter(t => t.id !== currentEditingId);
+            } else {
+                if (activeDeleteTargetMode === 'task-bulk') {
+                    if (project) {
+                        const checkboxedNodes = document.querySelectorAll('.task-checkbox:checked');
+                        const idsToRemove = Array.from(checkboxedNodes).map(chk => chk.value);
+                        project.tasks = project.tasks.filter(t => !idsToRemove.includes(t.id));
+                    }
+                    selectProject(projId);
+                    triggerToast('success', 'Selected WBS tasks were permanently purged.');
+                    clearAllSelections();
+                } else if (activeDeleteTargetMode === 'single-task') {
+                    if (project) {
+                        project.tasks = project.tasks.filter(t => t.id !== currentEditingId);
+                    }
+                    selectProject(projId);
+                    triggerToast('success', `Task ID ${currentEditingId} has been successfully deleted.`);
+                } else if (activeDeleteTargetMode === 'project') {
+                    triggerToast('success', 'Project shifted to cold storage archive catalog.');
+                } else if (activeDeleteTargetMode === 'role') {
+                    triggerToast('success', 'Security role package purged successfully.');
+                } else if (activeDeleteTargetMode === 'user') {
+                    triggerToast('success', 'Identity access permissions revoked and member purged.');
                 }
-                selectProject(projId);
-                triggerToast('success', `Task ID ${currentEditingId} has been successfully deleted.`);
-            } else if (activeDeleteTargetMode === 'project') {
-                triggerToast('success', 'Project shifted to cold storage archive catalog.');
-            } else if (activeDeleteTargetMode === 'role') {
-                triggerToast('success', 'Security role package purged successfully.');
-            } else if (activeDeleteTargetMode === 'user') {
-                triggerToast('success', 'Identity access permissions revoked and member purged.');
             }
         }
 
@@ -2226,12 +2467,13 @@
                 existingNoResults.remove();
             }
 
-            let visibleCount = 0;
+            let matchedRows = [];
 
+            // 1. Filter rows
             rows.forEach(row => {
                 const rowId = row.querySelector('.data-id').innerText.toLowerCase();
                 const rowTitle = row.querySelector('.data-title').innerText.toLowerCase();
-                const rowPlatform = row.querySelector('.data-platform').innerText.trim();
+                const rowPlatform = row.getAttribute('data-platform') || row.querySelector('.data-platform').innerText.trim();
                 const rowStatus = row.querySelector('.data-status').innerText.trim();
                 const rowHealthText = row.querySelector('.data-health').innerText;
 
@@ -2241,21 +2483,38 @@
                 const matchesSearch = (rowId.includes(searchQuery) || rowTitle.includes(searchQuery) || rowStatus.toLowerCase().includes(searchQuery));
 
                 if (matchesPlatform && matchesStatus && matchesHealth && matchesSearch) {
-                    row.classList.remove('hidden');
-                    visibleCount++;
+                    matchedRows.push(row);
                 } else {
                     row.classList.add('hidden');
                 }
             });
 
-            // Footer updates
+            const visibleCount = matchedRows.length;
+            const totalPages = Math.ceil(visibleCount / wbsPageSize) || 1;
+            if (wbsCurrentPage > totalPages) wbsCurrentPage = totalPages;
+
+            // 2. Paginate matched rows
+            const startIndex = (wbsCurrentPage - 1) * wbsPageSize;
+            const endIndex = startIndex + wbsPageSize;
+
+            matchedRows.forEach((row, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            // 3. Footer Updates
             const showingSpan = document.getElementById('tasksShowingCount');
             if (showingSpan) {
-                showingSpan.innerText = visibleCount === 0 ? "0" : `1-${visibleCount}`;
+                const startShow = visibleCount === 0 ? 0 : startIndex + 1;
+                const endShow = Math.min(endIndex, visibleCount);
+                showingSpan.innerText = `${startShow}-${endShow}`;
             }
             const totalSpan = document.getElementById('tasksTotalCount');
             if (totalSpan) {
-                totalSpan.innerText = rows.length;
+                totalSpan.innerText = visibleCount;
             }
 
             if (visibleCount === 0) {
@@ -2272,6 +2531,9 @@
                 `;
                 tbody.appendChild(noResultsTr);
             }
+
+            // 4. Render pagination buttons
+            renderPaginationButtons(visibleCount, totalPages);
         }
 
         // DYNAMIC MULTI-PARAMETER FILTERING FOR SYSTEM ROLES
