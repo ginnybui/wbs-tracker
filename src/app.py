@@ -113,10 +113,10 @@ def get_spreadsheet():
     spreadsheet_key = spreadsheet_key_match.group(1)
     opened_spreadsheet = client.open_by_key(spreadsheet_key)
     
-    # Trỏ trực tiếp và cố định vào tab Data_DEV
+    # Direct and fixed pointer to the Data_DEV worksheet
     try:
         ws = opened_spreadsheet.worksheet("Data_DEV")
-        # Chạy dọn dẹp các dòng dữ liệu bị lệch cột trước đó (Project ID bắt đầu bằng # hoặc TSK)
+        # Clean up column-shifted corrupt data rows (Project ID starting with # or TSK)
         cleanup_corrupt_rows(ws)
         seed_default_tasks_if_missing(ws)
         return ws
@@ -163,12 +163,12 @@ def cleanup_corrupt_rows(worksheet):
         rows_to_delete = []
         for i, record in enumerate(data):
             proj_id = str(record.get('Project ID', '')).strip()
-            # Nếu Project ID là #TSK-001 hoặc chứa dấu #, đó là dòng bị lỗi lệch cột
+            # If Project ID is #TSK-001 or contains '#', it is a column-shifted corrupt row
             if proj_id.startswith('#') or proj_id.startswith('TSK'):
                 rows_to_delete.append(i + 2)
         
         if rows_to_delete:
-            # Sắp xếp giảm dần để chỉ mục không bị lệch khi xóa
+            # Sort descending to prevent row index shifting during deletion
             rows_to_delete.sort(reverse=True)
             for r_idx in rows_to_delete:
                 worksheet.delete_rows(r_idx)
@@ -273,9 +273,9 @@ class APIHandler(BaseHTTPRequestHandler):
                     if proj_id != target_project_id:
                         continue
 
-                    # Trích xuất Task ID từ cột 'Task ID'
+                    # Extract Task ID from 'Task ID' column
                     task_id_raw = str(record.get('Task ID', '')).strip()
-                    # Định dạng sang chuỗi WBS cao cấp '#TSK-XXX'
+                    # Format into premium WBS '#TSK-XXX' string representation
                     try:
                         task_id_num = int(float(task_id_raw))
                         task_id_formatted = f"#TSK-{str(task_id_num).zfill(3)}"
@@ -318,7 +318,7 @@ class APIHandler(BaseHTTPRequestHandler):
                         'description': str(record.get('Description', '')).strip()
                     })
 
-                # Sắp xếp danh sách task theo số ID giảm dần (mới nhất lên đầu)
+                # Sort tasks list by numeric ID descending (newest task on top)
                 def get_task_num(t):
                     match = re.search(r'\d+', t['id'])
                     return int(match.group(0)) if match else 0
@@ -356,7 +356,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 ensure_headers_exist(worksheet)
                 
                 existing = worksheet.get_all_records()
-                # Tìm Task ID lớn nhất trong dự án này để tăng tự động
+                # Find the maximum Task ID in this project for auto-increment
                 max_task_id = 0
                 for r in existing:
                     proj = str(r.get('Project ID', '')).strip()
@@ -405,7 +405,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 description = task_data.get('description', '')
                 health = "🟢 Efficient" if act <= est else "🔴 Overtime"
                 
-                # Cột theo thứ tự: Project ID, Task ID, Title, Health, Status, Est Hours, Act Hours, Start Date, End Date, Completion %, Platform, Description
+                # Columns in order: Project ID, Task ID, Title, Health, Status, Est Hours, Act Hours, Start Date, End Date, Completion %, Platform, Description
                 new_row = [target_project_id, new_id_formatted, title, health, sheet_status, est, act, start_date, end_date, progress, platform, description]
                 worksheet.append_row(new_row)
                 
@@ -434,7 +434,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 all_records = worksheet.get_all_records()
                 target_id = task_data.get('id', '')
                 
-                # Lấy số nguyên từ chuỗi ID '#TSK-009' -> 9
+                # Extract integer number from target ID string '#TSK-009' -> 9
                 match = re.search(r'\d+', target_id)
                 if not match:
                     self.send_response(400)
@@ -446,7 +446,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 row_index = -1
                 target_project_id = "PRJ-001"
                 for i, r in enumerate(all_records):
-                    # Tìm dòng có Task ID khớp số (Task ID là duy nhất trên toàn bộ bảng)
+                    # Find the row matching the Task ID number (Task ID is unique across the worksheet)
                     try:
                         task_id_raw = str(r.get('Task ID', '')).strip()
                         try:
@@ -488,7 +488,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 description = task_data.get('description', '')
                 health = "🟢 Efficient" if act <= est else "🔴 Overtime"
                 
-                # Sắp xếp chuẩn cột
+                # Align columns properly based on headers list
                 headers = [h.strip() for h in worksheet.row_values(1)]
                 row_values = [""] * len(headers)
                 for col_idx, h in enumerate(headers):
@@ -533,7 +533,7 @@ class APIHandler(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "ID parameter missing"}).encode('utf-8'))
                     return
                 
-                # Trích xuất các số Task ID từ danh sách gửi lên
+                # Extract Task ID numbers from the submitted deletion list
                 target_ids = [tid.strip() for tid in target_id.split(',') if tid.strip()]
                 target_nums = []
                 for tid in target_ids:
