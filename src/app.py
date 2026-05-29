@@ -587,7 +587,7 @@ if 'api_server_started' not in st.session_state:
 
 # --- 4. RENDER DYNAMIC MOCKUP IFRAME ---
 base_path = os.path.dirname(os.path.abspath(__file__))
-html_file_path = os.path.join(os.path.dirname(base_path), "dashboard_preview.html")
+html_file_path = os.path.join(base_path, "dashboard_preview.html")
 
 try:
     with open(html_file_path, "r", encoding="utf-8") as f:
